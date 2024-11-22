@@ -79,6 +79,10 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING,
                 allowNull: true,
               },
+              category: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+              },
         },
         {
             tableName: "attendance_type",

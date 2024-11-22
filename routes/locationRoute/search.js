@@ -8,6 +8,8 @@ const { SaleSettlement } = require("../../db").models;
 const service = require("../../services/LocationService");
 
 async function search (req, res, next){
+    const hasPermission = await Permission.Has(Permission.LOCATION_VIEW, req);
+ 
 
     const params = req.query;
     let companyId = req.user && req.user.company_id;

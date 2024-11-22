@@ -15,6 +15,7 @@ const Number = require("../../lib/Number");
 const { BAD_REQUEST } = require("../../helpers/Response");
 
 async function search(req, res, next) {
+  const hasPermission = await Permission.Has(Permission.MEDIA_VIEW, req);
 
  
   try {

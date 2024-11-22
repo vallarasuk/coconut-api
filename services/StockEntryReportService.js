@@ -7,6 +7,9 @@ const { getSettingListByName, getSettingValue } = require("./SettingService");
 const Setting = require("../helpers/Setting");
 const Number = require("../lib/Number");
 const Permission = require("../helpers/Permission");
+const StatusService = require("./StatusService");
+const ObjectName = require("../helpers/ObjectName");
+const Status = require("../helpers/Status");
 
 class StockEntryReportService {
   static async getCountByUser(updateDataArray) {
@@ -348,6 +351,11 @@ class StockEntryReportService {
             [Op.lte]: date?.endDate,
           },
         };
+      }
+
+      let completedStatus = await StatusService.Get(ObjectName.STOCK_ENTRY_PRODUCT, Status.GROUP_COMPLETED, companyId);
+      if(Number.isNotNull(completedStatus)){
+        where.status = completedStatus?.id
       }
       
       let stockEntryList = await StockEntryProduct.findAndCountAll({

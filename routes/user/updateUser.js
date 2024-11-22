@@ -106,7 +106,7 @@ const createAuditLog = async (oldData, updatedData, req, id) => {
 
     if (updatedData?.time_zone && updatedData?.time_zone !== oldData.time_zone) {
       if (oldData?.time_zone !== updatedData?.time_zone) {
-        auditLogMessage.push(`Time one Updated To ${updatedData?.time_zone}\n`);
+        auditLogMessage.push(`Time Zone Updated To ${updatedData?.time_zone}\n`);
       }
     }
 
@@ -137,6 +137,9 @@ const createAuditLog = async (oldData, updatedData, req, id) => {
 
 async function updateUser(req, res, next) {
   try {
+    //Permission Check
+    const hasPermissions = await Permission.Has(Permission.USER_EDIT, req);
+  
 
     const data = req.body;
     const { id } = req.params;
@@ -222,10 +225,6 @@ async function updateUser(req, res, next) {
              updateData.mobile_number1 = data?.mobileNumber1 && PhoneNumber.Get(data.mobileNumber1);
           }
 
-          if(data?.mobileNumber2 != undefined){
-            updateData.mobile_number2 = data?.mobileNumber2 && PhoneNumber.Get(data.mobileNumber2) ;
-          }
-
           if(data?.address1 != undefined){
             updateData.address1 = data?.address1 ? data?.address1:"" 
           }
@@ -291,6 +290,8 @@ async function updateUser(req, res, next) {
             updateData.current_shift_id = data.currentShiftId
           }
 
+            updateData.allow_leave = data?.allow_leave 
+
 
           userService
             .update(removeUndefinedKeys(updateData), {
@@ -304,9 +305,9 @@ async function updateUser(req, res, next) {
               await createAuditLog (userDetails, updateData, req, id);
 
               res.send(200, {
-                token: userData[1].token,
-                role: userData[1].role_id,
-                userId: userData[1].id,
+                token: userData[1]?.token,
+                role: userData[1]?.role_id,
+                userId: userData[1]?.id,
                 message: "User Updated",
               });
               await UserService.reindex(id,companyId)

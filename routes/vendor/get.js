@@ -8,7 +8,7 @@ const vendorDetails = require("./processList");
 function get(req, res, next) {
   const id = req.params.id;
 
-  
+
   AccountVendor.findOne({
     where: { id },
   })

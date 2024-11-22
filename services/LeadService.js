@@ -201,7 +201,7 @@ class LeadService {
       mobile: data?.mobile ? data?.mobile : "",
       designation : data ?.designation ? data?.designation : "",
       owner_id : Number.Get(data ?.owner_id),
-      status: Number.Get(data?.status)
+      status: data?.status?.value ? Number.Get(data?.status?.value) : Number.Get(data?.status)
     };
 
     Lead.update(updateData, { where: { id: id, company_id: companyId } }).then((response) => {

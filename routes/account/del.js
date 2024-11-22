@@ -7,8 +7,7 @@ const AccountService = require("../../services/AccountService")
  */
  async function del(req, res, next){
     const hasPermission = await Permission.Has(Permission.ACCOUNT_DELETE, req);
- 
-  
+
     try{
         
         AccountService.del(req, res,next)

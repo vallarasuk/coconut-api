@@ -28,9 +28,12 @@ const Permission = require("../../helpers/Permission");
  * Sync account products route
  */
 async function syncProductFromVendor(req, res, next) {
- 
+  const hasPermission = await Permission.Has(
+    Permission.SUPPLIER_PRODUCT_SYNC_PRODUCTS_FROM_VENDOR,
+    req
+  );
 
-
+  
   const ids = req.body;
   const companyId = req.user.company_id;
   // Validate ids

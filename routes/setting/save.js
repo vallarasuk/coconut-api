@@ -17,12 +17,13 @@ function toTitleCase(str) {
 
 async function save(req, res, next) {
   try {
+    const hasPermission = await Permission.Has(Permission.FEATURE_SAVE, req);
 
     const { company_id } = req.query;
 
     let companyId = company_id ? company_id : Request.GetCompanyId(req);
 
- 
+  
 
     const data = req.body;
 

@@ -4,7 +4,7 @@ const Permission = require("../../helpers/Permission");
 const orderProductService = require("../../services/OrderProductService");
 
 async function cancel(req, res, next) {
-  
+
 
     orderProductService.cancel(req, res);
 };

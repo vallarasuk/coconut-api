@@ -27,6 +27,7 @@ const { sequelize } = require("../../db");
 const ProductPriceService = require("../../services/ProductPriceService");
 
 async function search(req, res, next) {
+  const hasPermission = await Permission.Has(Permission.PRODUCT_VIEW, req);
 
   
   try {

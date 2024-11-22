@@ -20,6 +20,7 @@ const bulkOrder = require("./bulkOrder");
 const updateDeliveryStatus = require("./updateDeliveryStatus");
 const getBySelectedIds = require("./getBySelectedIds");
 const cancelOrder = require("./cancel");
+const sendNotification = require("./sendNotification");
 
 module.exports = (server) => {
   server.post("/v1/order", verifyToken, create);
@@ -37,5 +38,6 @@ module.exports = (server) => {
   server.get("/v1/order/orderCount", verifyToken, orderCount);
   server.post("/v1/order/bulkOrder", verifyToken, bulkOrder);
   server.put("/v1/order/cancel/:id", verifyToken, cancelOrder);
+  server.put("/v1/order/sendNotification/:id", verifyToken, sendNotification);
 
 };

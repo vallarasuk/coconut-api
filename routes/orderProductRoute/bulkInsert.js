@@ -12,8 +12,13 @@ const { orderProduct, order } = require("../../db").models;
 const bulkInsert = async (req, res) => {
 
     try {
-       
-      
+        // Validate Permissions exist or not.
+        const hasPermission = await Permission.Has(
+            Permission.ORDER_PRODUCT_ADD,
+            req
+        );
+
+
         //get company Id from request
         const companyId = Request.GetCompanyId(req);
 

@@ -153,7 +153,8 @@ const removeDuplicates = (originalArray, prop) => {
 
 const update = async (req, res) => {
   // Validate Permission exist or not
- 
+  const hasPermission = await Permission.GetValueByName(Permission.TRANSFER_EDIT, req.role_permission);
+
   try {
     //get company Id from request
     let body = req.body;
@@ -190,7 +191,9 @@ const update = async (req, res) => {
 
 const report = async (req, res) => {
   try {
- 
+    // Validate Permissions exist or not.
+    // const hasPermission = await Permission.GetValueByName(Permission.TRANSFER_PRODUCT_REPORT_VIEW, req.role_permision);
+
     //get req params
     let params = req.query;
 

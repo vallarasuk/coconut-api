@@ -8,7 +8,9 @@ const Response = require("../../helpers/Response");
 const History = require("../../services/HistoryService");
 
 async function updateStatus(req, res, next) {
+  const hasPermission = await Permission.Has(Permission.PRODUCT_UPDATE_STATUS, req);
 
+  
   try{
   const data = req.body;
   const { id } = req.params;

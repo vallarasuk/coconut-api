@@ -459,7 +459,7 @@ class RecurringActivityService {
       });
 
       res.on("finish", async () => {
-        History.create("Activite Status updated", req, ObjectName.RECURRING_ACTIVITE, save.id);
+        History.create(`Activite Status updated to ${data.status === Status.ACTIVE ? Status.ACTIVE_TEXT  : Status.INACTIVE_TEXT}`, req, ObjectName.RECURRING_ACTIVITE, id);
       });
     } catch (err) {
       console.log(err);

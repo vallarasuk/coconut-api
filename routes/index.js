@@ -191,6 +191,8 @@ const OrderUpiPaymentReport = require("./OrderUpiPaymentReport");
 const locationRack = require("./locationRack");
 const googleConnect = require("./googleConnect");
 const ratingType = require("./ratingType");
+const ledger = require("./ledger");
+
 
 function routes(server) {
   user(server);
@@ -225,6 +227,7 @@ function routes(server) {
   TransferTypeReason(server)
   Visitor(server)
   comment(server)
+  ledger(server)
   accountAgreement(server);
   userTemperature(server);
   userDocument(server);

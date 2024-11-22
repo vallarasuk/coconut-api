@@ -1,8 +1,10 @@
 const { Salary, status: StatusModel, User } = require("../../db").models;
+const Setting = require("../../helpers/Setting");
 const Month = require("../../lib/Month");
 const DateTime = require("../../lib/dateTime");
 const Request = require("../../lib/request");
 const String = require("../../lib/string");
+const { getSettingValue } = require("../../services/SettingService");
 
 async function get(req, res, next) {
   const { id } = req.params;
@@ -77,7 +79,7 @@ async function get(req, res, next) {
       other_allowance,
       statusDetail,
       user,
-      attendance_count
+      attendance
     } = salaryData.get();
 
     let data = {
@@ -126,7 +128,8 @@ async function get(req, res, next) {
       first_name: user?.name,
       last_name: user?.last_name,
       monthValue: Month.get(month),
-      attendanceCount:  String.isNotNull(attendance_count) ? JSON.parse(attendance_count):[]
+      attendanceCount:  String.isNotNull(attendance) ? JSON.parse(attendance):[],
+      enableAddtionalDayCalculation: await getSettingValue(Setting.ENABLE_SALARY_ADDITIONAL_HOURS,company_id) == "true"?true:false
     };
    
    

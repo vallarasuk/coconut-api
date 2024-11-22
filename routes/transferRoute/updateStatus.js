@@ -16,8 +16,10 @@ const { TransferType, Transfer: TransferModal } = require("../../db").models;
 
 async function updateStatus(req, res, next) {
   try {
+    const hasPermission = await Permission.Has(Permission.TRANSFER_STATUS, req);
 
-  
+   
+
     let id = req.body && req.body.id;
 
     if (typeof id === "number") {

@@ -19,7 +19,9 @@ const AccountProduct = new DataBaseService(AccountProductModel);
  * Project category search route
  */
 async function search(req, res, next) {
-   
+    const hasPermission = await Permission.Has(Permission.PRODUCT_CATEGORY_VIEW, req);
+
+
 
     let { page, pageSize, search, sort, sortDir, pagination, account_id } = req.query;
 

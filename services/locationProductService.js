@@ -1109,7 +1109,9 @@ const searchStoreProduct = async (params, companyId) => {
         system_quantity,
         transferred_quantity,
         average_order_quantity,
-        locationRackDetail
+        locationRackDetail,
+        last_transfer_date,
+        last_return_date
       } = storeProductDetail[i];
       updatedQuantity = quantity >= 0 && replenish_quantity >= 0 ? quantity + replenish_quantity : quantity;
 
@@ -1161,6 +1163,8 @@ const searchStoreProduct = async (params, companyId) => {
         average_order_quantity:average_order_quantity,
         location_rack: locationRackDetail?.id,
         location_rack_name: locationRackDetail?.name,
+        lastTransferDate: Date.Format(last_transfer_date),
+        lastReturnedDate: Date.Format(last_return_date),
       };
       data.push(values);
     }
@@ -1390,14 +1394,14 @@ const Reindex = async (companyId, productId) => {
 
 
       const transferQuantityData = await TransferProduct.findAll({
-        attributes: ["product_id", "to_store_id", [Sequelize.fn("SUM", Sequelize.col("quantity")), "quantity"]],
+        attributes: ["product_id", "to_store_id", [Sequelize.fn("SUM", Sequelize.col("quantity")), "quantity"],[Sequelize.fn("MAX", Sequelize.col("createdAt")), "createdAt"]],
         group: ["product_id", "to_store_id"],
         where: { company_id: companyId },
         raw: true
       });
 
       const returnQuantityData = await TransferProduct.findAll({
-        attributes: ["product_id", "from_store_id", [Sequelize.fn("SUM", Sequelize.col("quantity")), "quantity"]],
+        attributes: ["product_id", "from_store_id", [Sequelize.fn("SUM", Sequelize.col("quantity")), "quantity"],[Sequelize.fn("MAX", Sequelize.col("createdAt")), "createdAt"]],
         group: ["product_id", "from_store_id"],
         where: { company_id: companyId },
         raw: true
@@ -1426,13 +1430,6 @@ const Reindex = async (companyId, productId) => {
         raw: true
       });
 
-      const transferProductData = await TransferProduct.findAll({
-        attributes: ["product_id", "from_store_id", [Sequelize.fn("MAX", Sequelize.col("createdAt")), "createdAt"]],
-        where: { company_id: companyId },
-        group: ["product_id", "from_store_id"],
-        order: [["createdAt", "DESC"]],
-        raw: true
-      });
 
       const transferQuantityMap = Object.fromEntries(
         transferQuantityData.map(item => [`${item.product_id}-${item.to_store_id}`, item])
@@ -1454,22 +1451,19 @@ const Reindex = async (companyId, productId) => {
         stockEntryData.map(item => [`${item.product_id}-${item.store_id}`, item])
       );
 
-      const lastTransferMap = Object.fromEntries(
-        transferProductData.map(item => [`${item.product_id}-${item.from_store_id}`, item])
-      );
       for (const value of locationProductData) {
         const transferQty = transferQuantityMap[`${value.product_id}-${value.store_id}`];
         const returnQty = returnQuantityMap[`${value.product_id}-${value.store_id}`];
         const orderQty = orderQuantityMap[`${value.product_id}-${value.store_id}`];
         const lastOrder = lastOrderMap[`${value.product_id}-${value.store_id}`];
         const lastStockEntry = lastStockEntryMap[`${value.product_id}-${value.store_id}`];
-        const lastTransfer = lastTransferMap[`${value.product_id}-${value.store_id}`];
 
         const data = {
           order_quantity: orderQty && Number.Get(orderQty.quantity),
           last_order_date: lastOrder && lastOrder.order_date,
           last_stock_entry_date: lastStockEntry && lastStockEntry.createdAt,
-          last_transfer_date: lastTransfer && lastTransfer.createdAt,
+          last_transfer_date: transferQty && transferQty?.createdAt,
+          last_return_date: returnQty && returnQty?.createdAt,
           transfer_quantity: transferQty && Number.Get(transferQty.quantity),
           return_quantity: returnQty && Number.Get(returnQty.quantity),
           system_quantity: (transferQty ? Number.Get(transferQty.quantity) : 0) -

@@ -17,6 +17,7 @@ describe("SalaryMonthly - Update", () => {
     "./validate": sinon.stub().yields(null),
   });
 
+  req.isAdmin = true;
   req.params.salaryId = 1;
 
   req.body = {
@@ -73,6 +74,7 @@ describe("SalaryMonthly - Update", () => {
   });
 
   it("should return permission issue if its not admin", (done) => {
+    req.isAdmin = req.isManager = false;
 
     next = (err) => {
       expect(err.statusCode).to.be.equal(401);

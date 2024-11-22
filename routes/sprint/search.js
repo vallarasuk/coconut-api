@@ -17,7 +17,8 @@ const Response = require("../../helpers/Response");
  * Sprint search route
  */
 async function search(req, res, next) {
-
+  const hasPermission = await Permission.Has(Permission.SPRINT_VIEW, req);
+ 
   await  sprintService.search(req,res,next);
 }
 module.exports = search;

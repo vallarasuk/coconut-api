@@ -144,7 +144,7 @@ class SlackService {
             );
 
             return response;
-        }catch(err){
+        } catch (err) {
             console.log(err);
         }
     }
@@ -265,13 +265,13 @@ class SlackService {
             };
 
             request.post(option, () => callback());
-        } catch(err) {
+        } catch (err) {
             console.log(err);
         }
     }
 
     static async postImage(token, slackId, image, as_user, callback) {
-        try{
+        try {
             if (!token || !slackId || !image) {
                 return callback();
             }
@@ -298,7 +298,7 @@ class SlackService {
             //     } else {
             //       console.log(error);
             //     }
-        }catch(err){
+        } catch (err) {
             console.log(err);
         }
     }
@@ -401,7 +401,7 @@ class SlackService {
 
                 return response;
             }
-        } catch(err) {
+        } catch (err) {
             console.log(err);
         }
     }
@@ -447,20 +447,22 @@ class SlackService {
                 }
 
                 // Add the action buttons at the end
-                messageBlocks.push({
-                    "type": "actions",
-                    "elements": [
-                        {
-                            "type": "button",
-                            "text": {
-                                "type": "plain_text",
-                                "text": "🗺️ Get Direction",
-                                "emoji": true
-                            },
-                            "url": `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
-                        }
-                    ]
-                });
+                if (latitude && longitude) {
+                    messageBlocks.push({
+                        "type": "actions",
+                        "elements": [
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "🗺️ Get Direction",
+                                    "emoji": true
+                                },
+                                "url": `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
+                            }
+                        ]
+                    });
+                }
 
                 messageBlocks.push(...blocks);
 
@@ -470,7 +472,7 @@ class SlackService {
                     {
                         channel: slackUserId,
                         unfurl_links: true,
-                        blocks: messageBlocks 
+                        blocks: messageBlocks
                     },
                     {
                         headers: {
@@ -486,8 +488,6 @@ class SlackService {
             console.log(err);
         }
     }
-
-
 }
 
 module.exports = SlackService;

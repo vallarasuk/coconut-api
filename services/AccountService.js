@@ -10,7 +10,8 @@ const {
     status: StatusModel,
     vendorProduct,
     PaymentAccount,
-    AccountType: AccountTypeModel
+    AccountType: AccountTypeModel,
+    AddressModel
 } = require("../db").models;
 const accountService = new DataBaseService(account);
 const History = require("./HistoryService");
@@ -1054,55 +1055,33 @@ const update = async (req, res, next) => {
 
     updateVendor.billing_name = data.billing_name ? data.billing_name : null;
     if (data.billing_name && data.billing_name !== vendorDetails.billing_name) {
+        const billingName = await AddressModel.findOne({
+            where:{
+                id:data.billing_name,
+                company_id:companyId
+            }
+        })
         historyMessage.push(
-            `Billing Name Updated from ${vendorDetails.billing_name} to ${data.billing_name}\n`
+            `Billing Name Updated to ${billingName.title}\n`
         );
     }
 
-    if (typeof data.notes === 'string') {
-        if (data.notes && data.notes !== vendorDetails.notes) {
-            try {
-                const parsedNewNotes = JSON.parse(data.notes);
-                const newNotesText = parsedNewNotes?.blocks?.[0]?.text || '';
-
-                updateVendor.notes = data.notes;
-
-                const oldNotesDecoded = Url.RawURLDecode(vendorDetails.notes);
-                const parsedOldNotes = JSON.parse(oldNotesDecoded);
-                const oldNotesText = parsedOldNotes?.blocks?.[0]?.text || '';
+    if (data.notes === undefined || data.notes === "") {
+        updateVendor.notes = null;
+    } else if (typeof data.notes === 'string') {
+        // Handle the string case
+        try {
+            const parsedNewNotes = JSON.parse(data.notes);
+            const newNotesText = parsedNewNotes?.blocks?.[0]?.text || '';
+    
+            updateVendor.notes = data.notes;
+    
+            const oldNotesDecoded = Url.RawURLDecode(vendorDetails.notes);
+            const parsedOldNotes = JSON.parse(oldNotesDecoded);
+            const oldNotesText = parsedOldNotes?.blocks?.[0]?.text || '';
 
                 // Compare old and new notes text
-                if (oldNotesText !== newNotesText) {
-                    if (newNotesText) {
-                        historyMessage.push(`Notes Updated to "${newNotesText}"\n`);
-                    } else {
-                        historyMessage.push(`Notes updated, but no text available.\n`);
-                    }
-                }
-            } catch (error) {
-                updateVendor.notes = data.notes;
-                console.error(error);
-
-                if (data.notes) {
-                    historyMessage.push(`Notes Updated to "${data.notes}" (unstructured data)\n`);
-                } else {
-                    historyMessage.push(`Notes Updated, but data appears empty or invalid.\n`);
-                }
-            }
-        }
-    } else {
-        try {
-            // Handle case when data.notes is an object
-            const newNotesData = data.notes ? JSON.parse(data.notes) : "";
-            if (validator.isNotEmpty(data.notes) && data.notes !== vendorDetails.notes) {
-                updateVendor.notes = Url.RawURLEncode(data.notes);
-
-                const oldNotesDecoded = Url.RawURLDecode(vendorDetails.notes);
-                const oldNotesData = JSON.parse(oldNotesDecoded);
-
-                const oldNotesText = oldNotesData?.blocks?.[0]?.text || '';
-                const newNotesText = newNotesData?.blocks?.[0]?.text || '';
-
+            if (oldNotesText !== newNotesText) {
                 if (newNotesText) {
                     historyMessage.push(`Notes Updated to "${newNotesText}"\n`);
                 } else {
@@ -1110,7 +1089,35 @@ const update = async (req, res, next) => {
                 }
             }
         } catch (error) {
-            // Handle parsing or encoding issues
+            updateVendor.notes = data.notes;
+            console.error(error);
+    
+            if (data.notes) {
+                historyMessage.push(`Notes Updated to "${data.notes}" (unstructured data)\n`);
+            } else {
+                historyMessage.push(`Notes Updated, but data appears empty or invalid.\n`);
+            }
+        }
+    } else {
+        // Handle the object case (if data.notes is an object)
+        try {
+            const newNotesData = data.notes ? JSON.parse(data.notes) : "";
+            if (validator.isNotEmpty(data.notes) && data.notes !== vendorDetails.notes) {
+                updateVendor.notes = Url.RawURLEncode(data.notes);
+    
+                const oldNotesDecoded = Url.RawURLDecode(vendorDetails.notes);
+                const oldNotesData = JSON.parse(oldNotesDecoded);
+    
+                const oldNotesText = oldNotesData?.blocks?.[0]?.text || '';
+                const newNotesText = newNotesData?.blocks?.[0]?.text || '';
+    
+                if (newNotesText) {
+                    historyMessage.push(`Notes Updated to "${newNotesText}"\n`);
+                } else {
+                    historyMessage.push(`Notes updated, but no text available.\n`);
+                }
+            }
+        } catch (error) {
             updateVendor.notes = data.notes;
             console.error('Error parsing or encoding notes:', error);
             historyMessage.push(`Notes Updated, but an error occurred while processing.\n`);

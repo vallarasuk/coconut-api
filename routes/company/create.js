@@ -8,7 +8,8 @@ const ObjectName = require("../../helpers/ObjectName");
 
 async function create(req, res, next) {
   try {
-    
+    const hasPermissions = await Permission.Has(Permission.COMPANY_ADD, req);
+   
 
     const data = req.body;
 

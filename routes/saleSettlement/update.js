@@ -20,7 +20,9 @@ const LocationService = require("../../services/LocationService");
 const Response = require("../../helpers/Response");
 
 async function update(req, res, next) {
+  const hasPermission = await Permission.Has(Permission.SALE_SETTLEMENT_EDIT, req);
 
+  
 
   let data = req.body;
   let { id } = req.params;
@@ -239,24 +241,29 @@ if(Number.isNotNull(updateData?.sales_executive)){
      storeAmountMismatch = Number.Get(getStoreDetail?.cash_in_location) - Number.Get(data?.cash_in_store);
    }
     // systemLog
-    res.json(Response.OK, { message: "Sales Settlement Data Updated",
-      orderCash:orderCashMismatch,
-      orderUpi:orderUpiMismatch,
-      storeAmount:storeAmountMismatch });
+    res.json(Response.OK, {
+      message: "Sales Settlement Data Updated",
+      orderCash: orderCashMismatch,
+      orderUpi: orderUpiMismatch,
+      storeAmount: storeAmountMismatch
+    });
     res.on("finish", async () => {
       //create system log for sale updation
       if (logMessage && logMessage.length > 0) {
         let message = logMessage.join();
         History.create(`${message}`, req, ObjectName.SALE_SETTLEMENT, id);
       }
-      if((Number.isNotNull(saleSettlementData?.statusDetail?.notify_to_reviewer == Status.NOTIFY_TO_REVIEWER_ENABLED) && Number.isNotNull(saleSettlementData?.reviewer) && Number.Get(updateData?.reviewer) !== Number.Get(saleSettlementData?.reviewer))){
-        let locationDetail = await LocationService.getLocationDetails(saleSettlementData?.store_id,company_id);
-        let shiftDetail = await ShiftService.getShiftById(saleSettlementData?.shift,company_id)
-        let notifParams={
+      else {
+        History.create("Sale Settlement Updated", req, ObjectName.SALE_SETTLEMENT, id);
+      }
+      if ((Number.isNotNull(saleSettlementData?.statusDetail?.notify_to_reviewer == Status.NOTIFY_TO_REVIEWER_ENABLED) && Number.isNotNull(saleSettlementData?.reviewer) && Number.Get(updateData?.reviewer) !== Number.Get(saleSettlementData?.reviewer))) {
+        let locationDetail = await LocationService.getLocationDetails(saleSettlementData?.store_id, company_id);
+        let shiftDetail = await ShiftService.getShiftById(saleSettlementData?.shift, company_id)
+        let notifParams = {
           company_id: company_id,
           reviwer_id: updateData?.reviewer,
           SsId: id,
-          data: {...saleSettlementData,locationName: locationDetail?.name,shiftName: shiftDetail?.name}
+          data: { ...saleSettlementData, locationName: locationDetail?.name, shiftName: shiftDetail?.name }
         }
         await SaleSettlementNotification.sendReviwerChangeSlackNotification(notifParams)
       }

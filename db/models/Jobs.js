@@ -131,6 +131,10 @@ const Jobs = sequelize.define("jobs", {
 			allowNull: true,
 			defaultValue: 0.00
 		},
+		fields: {
+			type: DataTypes.STRING,
+			allowNull: true
+		},
 		company_id : {
 			type: DataTypes.INTEGER,  
 			allowNull: false

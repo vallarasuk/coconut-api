@@ -35,11 +35,7 @@ let create = function create(req, res, next) {
         case 2:
           hasPermission = _context.sent;
 
-          if (hasPermission) {
-            _context.next = 5;
-            break;
-          }
-
+       
           
 
         case 5:

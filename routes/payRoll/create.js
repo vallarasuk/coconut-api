@@ -12,7 +12,7 @@ function payrollIsExists(user_id, month, year, callback) {
   });
 }
 function create(req, res, next) {
-  
+
   const { userId, month, year } = req.body;
 
   payrollIsExists(userId, month, year, (err) => {

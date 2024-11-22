@@ -23,9 +23,9 @@ async function search(req, res, next) {
           createdAt: defaultDateFormat(settingData.createdAt),
         });
       });
-      if (settings && !settings.length > 0) {
-        return res.json(Response.BAD_REQUEST, { message: 'Setting not found' });
-      }
+      // if (settings && !settings.length > 0) {
+      //   return res.json(Response.BAD_REQUEST, { message: 'Setting not found' });
+      // }
       let data = {
         settings: settings,
       };

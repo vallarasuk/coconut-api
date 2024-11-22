@@ -18,6 +18,8 @@ const update = async (req, res, next) => {
   try {
     let companyId = Request.GetCompanyId(req);
 
+    const hasPermission = await Permission.GetValueByName(Permission.SALARY_EDIT, req.role_permission);
+   
 
     if (!id) {
       return res.json(400, {

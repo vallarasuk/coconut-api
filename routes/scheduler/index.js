@@ -92,6 +92,7 @@ const cancelledReportNotification = require("./orderProduct/cancelledReportNotif
 const orderVerifyUpiPaymentScreenshot = require("./order/orderVerifyUpiPaymentScreenshot.js");
 const enquiryTicket = require("./ticket/enquiryTicket");
 const AddFineForCheckoutMIssing = require("./attendance/AddFineForCheckoutMIssing.js");
+const AddBonusForLateCheckout = require("./attendance/AddBonusForLateCheckout.js");
 
 module.exports = (server) => {
   // Schedular Api
@@ -478,5 +479,7 @@ module.exports = (server) => {
     server.post("/v1/scheduler/attendance/addFineForCheckoutMissing", verifySchedulerAuthorization, AddFineForCheckoutMIssing);
     server.post("/v1/scheduler/attendance/addFineForCheckoutMissing/manualRun", verifyToken, AddFineForCheckoutMIssing);
    
-
+  /* ✴---Add Bobus For Late Check-out ---✴ */
+  server.post("/v1/scheduler/attendance/addBonusForLateCheckout", verifySchedulerAuthorization, AddBonusForLateCheckout);
+  server.post("/v1/scheduler/attendance/addBonusForLateCheckout/manualRun", verifyToken, AddBonusForLateCheckout);
   };

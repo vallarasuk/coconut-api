@@ -16,7 +16,9 @@ const { productIndex } = require("../../db").models;
  * Vendor search route
  */
 async function search(req, res, next) {
+  const hasPermission = await Permission.Has(Permission.BRAND_VIEW, req);
 
+  
   let { page, pageSize, search, sort, sortDir, pagination } = req.query;
 
   // Validate if page is not a number

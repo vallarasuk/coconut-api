@@ -50,6 +50,10 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.INTEGER,  
 			allowNull: true
 		},
+		cutoff_time : {
+			type: DataTypes.INTEGER,  
+			allowNull: true
+		},
 	}, {
 		tableName: "shift",
 		timestamps: true,

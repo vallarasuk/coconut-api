@@ -130,7 +130,8 @@ class ShiftService {
             checkin_allowed_till: DateTime.convertGmtTimeToDateTimeByUserProfileTimezone(shiftList[i].checkin_allowed_till, new Date(), timeZone),
             createdAt: defaultDateFormat(shiftList[i].createdAt),
             updatedAt: defaultDateFormat(shiftList[i].updatedAt),
-            grace_period: shiftList[i]?.grace_period
+            grace_period: shiftList[i]?.grace_period,
+            cutoff_time: shiftList[i]?.cutoff_time
           });
         }
       }

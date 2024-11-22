@@ -11,10 +11,15 @@ const Response = require("../../helpers/Response");
 const UserService = require("../../services/UserService");
 
 async function pending(req, res, next) {
+  const validation = await UserService.validatePermissions(req, res,Permission.PURCHASE_VIEW,Permission.PURCHASE_MANAGE_OTHERS);
 
+  const { companyId, manageOthers } = validation;
   let userId = Request.getUserId(req)
-  req.query.companyId = req.user.company_id
+  let completedStatusDetail = await StatusService.Get(ObjectName.PURCHASE, Status.GROUP_COMPLETED, companyId);
+  req.query.companyId = companyId
+  req.query.excludeStatus = completedStatusDetail && completedStatusDetail?.id
   req.query.userId = userId
+  req.query.purchase_manage_others = manageOthers
 
   let data =  await PurchaseService.search(req.query, res);
   res.json(OK,data);

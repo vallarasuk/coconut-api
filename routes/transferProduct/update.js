@@ -13,7 +13,14 @@ const update = async (req, res) => {
   let { id } = req.params;
 
   try {
-    
+    // Validate Permission exist or not.
+    const hasPermission = await Permission.GetValueByName(
+      Permission.TRANSFER_PRODUCT_EDIT,
+      req.role_permission
+    );
+
+   
+
     let updateData = new Object();
 
     //get Transfer product Id

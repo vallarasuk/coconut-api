@@ -198,6 +198,7 @@ describe("Account Entry - Update", () => {
 	});
 
 	it("should return Authorization Error when the not admin", (done) => {
+		req.isAdmin = false;
 
 		next = (error) => {
 			expect(error.statusCode).to.be.equal(401);

@@ -4,20 +4,13 @@ const { StockEntry, StockEntryProduct, User, Attendance } = require('../db').mod
 const DataBaseService = require('../lib/dataBaseService');
 const DateTime = require('../lib/dateTime');
 const { Op } = require('sequelize');
-const History = require('./HistoryService');
-const ObjectName = require('../helpers/ObjectName');
-const schedulerJobCompanyService = require('../routes/scheduler/schedularEndAt');
 const moment = require('moment');
-const { getSettingValue } = require('./SettingService');
-const StockEntryService = new DataBaseService(StockEntry);
-const StockEntryProductService = new DataBaseService(StockEntryProduct);
-const ProductService = require('./ProductService');
-
+const { getSettingValue, getSettingListByName } = require('./SettingService');
 const errors = require('restify-errors');
 const mailService = require('./MailService');
-const StoreProduct = require('../helpers/StoreProduct');
 const MailConstants = require('../helpers/Setting');
 const String = require('../lib/string');
+const Setting = require("../helpers/Setting");
 
 class stockEntryDailyReport extends DataBaseService {
   async sendMail(params, callBack) {
@@ -32,35 +25,47 @@ class stockEntryDailyReport extends DataBaseService {
 
       // systemLog
       if (companyId) {
-        // get store lsit
+        // Get store list
         const storeList = await StoreService.search(companyId);
-
         let currentDate = DateTime.getSQlFormattedDate(new Date());
         let timeZone = await getSettingValue(MailConstants.USER_DEFAULT_TIME_ZONE, companyId);
-        let start_date = DateTime.toGetISOStringWithDayStartTime(currentDate)
-        let end_date = DateTime.toGetISOStringWithDayEndTime(currentDate)
+        let start_date = DateTime.toGetISOStringWithDayStartTime(currentDate);
+        let end_date = DateTime.toGetISOStringWithDayEndTime(currentDate);
+
 
         let where = new Object();
 
         where.createdAt = {
           [Op.and]: {
-            [Op.gte]: DateTime.toGMT(start_date,timeZone),
-            [Op.lte]: DateTime.toGMT(end_date,timeZone),
+            [Op.gte]: DateTime.toGMT(start_date, timeZone),
+            [Op.lte]: DateTime.toGMT(end_date, timeZone),
           },
         };
         where.company_id = companyId;
-        // validate store list length
-        let sendData = new Array();
 
         let updateData = [];
         let stockData = {};
         let stockEntryProductData = [];
+
+        let settingData = await getSettingListByName(Setting.STOCK_ENTRY_REQUIRED, companyId);
+
+        let allowedRoleIds = [];
+
+        if (settingData && settingData.length > 0) {
+          for (let i = 0; i < settingData.length; i++) {
+            if (settingData[i].value == "true") {
+              allowedRoleIds.push(settingData[i]?.object_id);
+            }
+          }
+        }
 
         let attendanceWhere = new Object();
 
         attendanceWhere.date = new Date();
         attendanceWhere.login = { [Op.ne]: null };
         attendanceWhere.company_id = companyId;
+
+        let allowedUserIds = [];
 
         if (storeList && storeList.length > 0) {
           for (let index = 0; index < storeList.length; index++) {
@@ -82,27 +87,32 @@ class stockEntryDailyReport extends DataBaseService {
             for (let j = 0; j < attendanceData.length; j++) {
               let userData = attendanceData[j].user;
 
-              where.owner_id = attendanceData[j].user_id;
-              where.store_id = attendanceData[j].store_id;
+              if (userData && allowedRoleIds.includes(userData.role)) {
+                allowedUserIds.push(userData.id);
 
-              stockEntryProductData = await StockEntryProduct.findAndCountAll({
-                where: where,
-              });
 
-              let NotMatchedCount = 0;
-              for (const product of stockEntryProductData.rows) {
-                if (product.dataValues.quantity !== product.dataValues.system_quantity) {
-                  NotMatchedCount++;
+                where.owner_id = attendanceData[j].user_id;
+                where.store_id = attendanceData[j].store_id;
+
+                stockEntryProductData = await StockEntryProduct.findAndCountAll({
+                  where: where,
+                });
+
+                let NotMatchedCount = 0;
+                for (const product of stockEntryProductData.rows) {
+                  if (product.dataValues.quantity !== product.dataValues.system_quantity) {
+                    NotMatchedCount++;
+                  }
                 }
-              }
 
-              stockData = {
-                userName: String.concatName(userData.name, userData.last_name),
-                locationName: storeList[index].name,
-                count: stockEntryProductData.count,
-                NotMatchedCount: NotMatchedCount,
-              };
-              updateData.push(stockData);
+                stockData = {
+                  userName: String.concatName(userData.name, userData.last_name),
+                  locationName: storeList[index].name,
+                  count: stockEntryProductData.count,
+                  NotMatchedCount: NotMatchedCount,
+                };
+                updateData.push(stockData);
+              }
             }
           }
         }

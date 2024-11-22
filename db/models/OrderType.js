@@ -45,7 +45,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-
+    delivery_time: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
   };
   const orderType = sequelize.define('order_type', OrderType, {
     tableName: 'order_type',

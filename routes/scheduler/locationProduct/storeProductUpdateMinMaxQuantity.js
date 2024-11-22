@@ -31,11 +31,18 @@ module.exports = async (req, res) => {
     res.send(200, { message: 'Store Product Max-Min Quantity Update Job Started' });
 
     // systemLog
-    res.on('finish', async () => {
-
-
-      await StoreProductMinMaxQuantityUpdateService.update(companyId);
-
+    res.on("finish", async () => {
+      try {
+        await StoreProductMinMaxQuantityUpdateService.update(companyId, null);
+      } catch (err) {
+        console.log(err);
+        History.create(
+          err.message,
+          req,
+          ObjectName.SCHEDULER_JOB,
+          schedularData.id
+        );
+      }
  
       await schedulerJobCompanyService.setStatusCompleted(params, (err) => {
         if (err) {

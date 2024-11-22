@@ -20,11 +20,14 @@ function bulkUpdate(req, res, next) {
    async.eachSeries(
 	        attendanceIds,
 	       async (attendanceId, cb) => {
-
-	           const attendanceData = {};
+			   
+			   const attendanceData = {};
 	           if (data.type) {
 	               attendanceData.type = data.type;
 	           }
+	           if (data?.days_count) {
+					attendanceData.days_count = data?.days_count 
+			   }
 	           if (data.user) {
 	               attendanceData.user_id = data.user;
 	           }

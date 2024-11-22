@@ -12,8 +12,9 @@ const Request = require("../../lib/request");
 
 // Tag Status update route
 async function updateTagStatus (req, res, next) {
+    const hasPermission = await Permission.Has(Permission.TAG_STATUS_UPDATE, req);
  
- 
+
     try {
         const data = req.body;
         const { id } = req.params;

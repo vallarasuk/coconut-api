@@ -27,21 +27,22 @@ async function filterRoute(req, res) {
         createCalculatedData.leave = filterData[0].leave;
         createCalculatedData.absent = filterData[0].absent;
         createCalculatedData.additional_days = filterData[0].additional;
-        createCalculatedData.basic = Number.roundOff(filterData[0].basic);
-        createCalculatedData.hra = Number.roundOff(filterData[0].hra);
-        createCalculatedData.special_allowance = Number.roundOff(filterData[0].special_allowance);
+        createCalculatedData.basic = Number.GetFloat(filterData[0].basic);
+        createCalculatedData.hra = Number.GetFloat(filterData[0].hra);
+        createCalculatedData.special_allowance = Number.GetFloat(filterData[0].special_allowance);
         createCalculatedData.net_salary = Number.roundOff(filterData[0].net_salary);
-        createCalculatedData.monthly_salary = Number.roundOff(filterData[0].monthlySalary);
-        createCalculatedData.additional_day_allowance = Number.roundOff(filterData[0].additional_day_allowance);
-        createCalculatedData.bonus = Number.roundOff(filterData[0].bonus);
-        createCalculatedData.salary_per_day = Number.roundOff(filterData[0].salaryPerDay);
-        createCalculatedData.leave_salary = Number.roundOff(filterData[0].leave_salary);
-        createCalculatedData.fine = Number.roundOff(filterData[0].fine);
-        createCalculatedData.additional_hours = Number.roundOff(filterData[0].totalMinutes);
-        createCalculatedData.additional_hours_salary = Number.roundOff(filterData[0].additionalHourAmount);
-        createCalculatedData.worked_days_salary = Number.roundOff(filterData[0]?.worked_days_salary),
-        createCalculatedData.other_allowance = Number.roundOff(filterData[0]?.other_allowance)
-        createCalculatedData.other_deducations = Number.roundOff(filterData[0]?.other_deducations)
+        createCalculatedData.monthly_salary = Number.GetFloat(filterData[0].monthlySalary);
+        createCalculatedData.additional_day_allowance = Number.GetFloat(filterData[0].additional_day_allowance);
+        createCalculatedData.bonus = Number.GetFloat(filterData[0].bonus);
+        createCalculatedData.salary_per_day = Number.GetFloat(filterData[0].salaryPerDay);
+        createCalculatedData.leave_salary = Number.GetFloat(filterData[0].leave_salary);
+        createCalculatedData.fine = Number.GetFloat(filterData[0].fine);
+        createCalculatedData.additional_hours = Number.GetFloat(filterData[0].totalMinutes);
+        createCalculatedData.additional_hours_salary = Number.GetFloat(filterData[0].additionalHourAmount);
+        createCalculatedData.worked_days_salary = Number.GetFloat(filterData[0]?.worked_days_salary),
+        createCalculatedData.other_allowance = Number.GetFloat(filterData[0]?.other_allowance)
+        createCalculatedData.other_deducations = Number.GetFloat(filterData[0]?.other_deductions)
+        createCalculatedData.attendance =filterData[0]?.attendanceCount
 
         await Salary.update(createCalculatedData,{where:{id:body?.id, company_id:companyId}});
 

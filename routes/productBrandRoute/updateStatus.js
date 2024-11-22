@@ -20,6 +20,8 @@ const Request = require("../../lib/request");
  * Product update route
  */
 async function updateStatus(req, res, next) {
+    const hasPermission = await Permission.Has(Permission.BRAND_STATUS_UPDATE, req);
+
 
 
     let company_id = Request.GetCompanyId(req);

@@ -67,7 +67,7 @@ class AppSettingService {
     }
 
     static async getFeatureList(companyId,nameSpace){
-
+try{
         if(!nameSpace){
             throw { message:"Name Space is Required"}
         }
@@ -101,6 +101,9 @@ class AppSettingService {
             }
         }
         return featureArrayList;
+    }catch(err){
+        console.log(err);
+    }
     }
 }
 module.exports = AppSettingService;

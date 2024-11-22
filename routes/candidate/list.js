@@ -21,6 +21,7 @@ async function list(req, res, next) {
     let { page, pageSize, search, sort, sortDir, startDate, endDate, pagination } = data;
 
     let companyId = Request.GetCompanyId(req);
+    let timeZone = Request.getTimeZone(req);
     // Validate if page is not a number
     page = page ? parseInt(page, 10) : 1;
     if (isNaN(page)) {
@@ -288,11 +289,15 @@ async function list(req, res, next) {
       let mediaUrl
       let mediaData = await MediaModal.findAll({
         where: { company_id: companyId, object_name: ObjectName.CANDIDATE, object_id: candidate.id },
-        order: [['createdAt', 'DESC']],
+        order: [["createdAt", "ASC"]],
       });
       for (let i = 0; i < mediaData.length; i++) {
-        const { id, file_name } = mediaData[i];
-        mediaUrl = getMediaUrl(file_name, id);
+        const { id } = mediaData[i];
+        let imageUrl = await MediaService.getMediaURL(id, companyId);
+
+        if (validator.isImageFormat(imageUrl)) {
+          mediaUrl = imageUrl;
+        }
       }
       let data = {
         candidateId: candidate.id,
@@ -344,8 +349,8 @@ async function list(req, res, next) {
         dob: candidate.dob,
         formattedDOBDate: utils.formatDate(candidate.dob, "DD-MMM-YYYY"),
         expectedCostPerHour: candidate.expected_cost_per_hour,
-        age: utils.getAge(candidate.dob, utils.getSQlFormattedDate()),
-        createdAt: candidate.created_at,
+        age: candidate?.age,
+        createdAt: DateTime.getDateTimeByUserProfileTimezone(candidate.created_at, timeZone),
         interviewDate: candidate?.interview_date ? DateTime.getSQlFormattedDate(candidate?.interview_date) : "",
         stayingWith: candidate.staying_with,
         profile_image_url: mediaUrl && validator.isImageFormat(mediaUrl) ? mediaUrl : "",

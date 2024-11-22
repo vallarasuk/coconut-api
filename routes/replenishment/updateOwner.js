@@ -8,6 +8,9 @@ const Request = require("../../lib/request");
 async function updateOwner(req, res, next) {
 
     try {
+        const hasPermission = await Permission.Has(Permission.REPLENISHMENT_MANAGE_OTHERS, req);
+
+       
         
         let companyId = Request.GetCompanyId(req);
 

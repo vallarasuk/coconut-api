@@ -196,6 +196,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      allow_leave: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+      },
     },
     {
       tableName: "user",

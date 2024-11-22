@@ -82,11 +82,12 @@ const CheckOut = async (req, res) => {
       store_id: store_id,
       roleId: roleId,
       companyId: companyId,
-      req: req
+      req: req,
+      object_id:attendanceId
     }
    let noStockEntryFineAddResponse =  await AttendanceService.findAddForNoStockEntry(noStockEntryParams);
     //Add Extra Stock Entry Bonus 
-   let extraStockEntryBonusAddResponse = await AttendanceService.bonusAddForExtraStockEntry(attendanceDetail.user_id,attendanceDetail?.date,userDefaultTimeZone,shift, store_id, roleId,companyId);
+   let extraStockEntryBonusAddResponse = await AttendanceService.bonusAddForExtraStockEntry(attendanceDetail.user_id,attendanceDetail?.date,userDefaultTimeZone,shift, store_id, roleId,companyId,attendanceId);
     // Fine Add For Minimum Replenish Count 
     let replenishmentMissingParams = {
       user_id: attendanceDetail.user_id,
@@ -94,13 +95,14 @@ const CheckOut = async (req, res) => {
       shift: shift,
       roleId: roleId,
       companyId,
-      req
+      req,
+      object_id:attendanceId
     }
     let minimumReplenishmentCountFineAddResponse = await AttendanceService.findAddForMinimumReplenishmentCount(replenishmentMissingParams);
      // Bonus Add For Extra Replenish Count 
-     let extraReplenishmentBonusAddResponse = await AttendanceService.bonusAddForExtraReplenishmentCount(attendanceDetail.user_id,attendanceDetail?.date,shift, roleId,companyId);
+     let extraReplenishmentBonusAddResponse = await AttendanceService.bonusAddForExtraReplenishmentCount(attendanceDetail.user_id,attendanceDetail?.date,shift, roleId,companyId,attendanceId);
      // Bonus Add For Additional Hours
-    let additionalHoursBonusResponse = await AttendanceService.addBonusForAdditionalHours(attendanceDetail.user_id,additionalHoursValue,shift?.end_time,roleId, userDefaultTimeZone,companyId);
+    let additionalHoursBonusResponse = await AttendanceService.addBonusForAdditionalHours(attendanceDetail.user_id,additionalHoursValue,shift?.end_time,roleId, userDefaultTimeZone,companyId,attendanceId);
     // Fine Add For Early CheckOut
     let earlyCheckOutParams = {
       attendanceDetail,
@@ -109,11 +111,22 @@ const CheckOut = async (req, res) => {
       companyId,
       early_hours: DateTime.convertHoursToMinutes(early_hours),
       user_id: attendanceDetail.user_id,
-      req
+      req,
+      object_id:attendanceId
     }
     let earlyCheckoutFineAddResponse = await AttendanceService.addFineForEarlyCheckOut(earlyCheckOutParams);
+
+    let endTimeValue = DateTime.addMinutesToTime(shift?.end_time ? shift?.end_time : "00:00", shift?.cutoff_time)
+    let currentTime = DateTime.getGmtHoursAndMinutes(new Date())
+    let lateCheckOutResponse = null
+    if (DateTime.isValidDate(shift?.end_time)) {
+      if (currentTime > endTimeValue) {
+        lateCheckOutResponse = await AttendanceService.addBonusForLateCheckOut(attendanceDetail.user_id, shift?.end_time, endAdditionalHours, userDefaultTimeZone, companyId, new Date(), new Date(attendanceDetail?.date), new Date(attendanceDetail?.date), attendanceId);
+      }
+    }
+
+
     //Bonus Add For Late CheckOut
-    let lateCheckOutResponse = await AttendanceService.addBonusForLateCheckOut(attendanceDetail.user_id,shift?.end_time, endAdditionalHours, userDefaultTimeZone, companyId);
     res.json(Response.OK, { 
       message: "Successfully Checked Out",
        ...(noStockEntryFineAddResponse ? {noStockEntryFineAdd: noStockEntryFineAddResponse}:{}),

@@ -16,7 +16,6 @@ const Response = require("../../helpers/Response");
       return res.json(Response.BAD_REQUEST, { message: "Company Not Found" });
     }
 
-
     try {
         const data = await orderService.searchOrder(params,req);
         res.json(data);

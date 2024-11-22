@@ -8,7 +8,9 @@ const { SchedulerJob } = require("../../db").models;
 
 async function del(req, res, next) {
   
-
+  const hasPermission = await Permission.Has(Permission.SCHEDULER_JOBS_DELETE, req);
+ 
+  
   const id = req.params.id;
   const company_id = Request.GetCompanyId(req);
 

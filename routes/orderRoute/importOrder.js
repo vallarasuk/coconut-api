@@ -15,8 +15,9 @@ const History = require("../../services/HistoryService");
  * Import orders route
  */
 async function importOrder(req, res, next) {
+    const hasPermission = await Permission.Has(Permission.ORDER_IMPORT, req);
  
-   
+
     const storeId = req.params.storeId;
 
     try {

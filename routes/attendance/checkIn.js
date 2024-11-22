@@ -159,7 +159,8 @@ async function checkIn(req, res, next) {
         location_id: attendanceData?.store_id,
         shift_id: attendanceData?.shift_id,
         req,
-        roleId
+        roleId,
+        object_id: attendance?.id
       }
       fineResponse = await addFineForLateCheckIn(lateCheckInParams);
     }

@@ -7,6 +7,7 @@ const AccountService = require("../../services/AccountService")
   async function updateStatus (req, res, next){
     const hasPermission = await Permission.Has(Permission.VENDOR_STATUS_UPDATE, req);
  
+
     try{
         
         AccountService.updateStatus(req, res,next)

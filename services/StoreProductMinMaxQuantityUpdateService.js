@@ -9,8 +9,11 @@ const ArrayList = require('../lib/ArrayList');
 const SettingService = require("../services/SettingService");
 const Setting = require('../helpers/LocationProduct');
 const LocationHelper = require('../helpers/StoreStatus');
-const { USER_DEFAULT_TIME_ZONE } = require("../helpers/Setting");
-
+const { USER_DEFAULT_TIME_ZONE, REPLENISHMENT_BY } = require("../helpers/Setting");
+const Replenishment = require("../helpers/Replenishment");
+const ObjectName = require("../helpers/ObjectName");
+const Status = require("../helpers/Status");
+const StatusService = require("./StatusService")
 class StoreProductMinMaxQuantityUpdateService {
   // Function to sum the quantity based on product ID, store ID, and date range
   static async getQuantityByDate(orderProductList, dateRange, currentDate, productId, storeId) {
@@ -59,8 +62,21 @@ class StoreProductMinMaxQuantityUpdateService {
           orderWhere.product_id = productId;
         }
 
+        orderWhere.cancelled_at= {[Op.eq]:null}
+        
         if (storeId) {
           orderWhere.store_id = storeId;
+        }
+
+        let statusDetail = await StatusService.getAllStatusByGroupId(
+          ObjectName.ORDER_PRODUCT,
+          Status.GROUP_COMPLETED,
+          companyId
+        );
+
+        if (ArrayList.isArray(statusDetail)) {
+          let status = statusDetail.map((value) => value.id);
+          orderWhere.status = status;
         }
 
         let OrderProductData = await orderProductModal.findAll({
@@ -158,7 +174,7 @@ class StoreProductMinMaxQuantityUpdateService {
       let totalMaxOrderQuantity;
       let totalMinOrderQuantity;
       let maxOrderQuantity = 0;
-      let minOrderQuantity = 0;
+      let minOrderQuantity = 0; 
       let minBigOrderQuantity = 0;
       let maxBigOrderQuantity = 0;
       let updateData;
@@ -275,18 +291,30 @@ class StoreProductMinMaxQuantityUpdateService {
 
               updateData.storeProductId = storeProductList[k].id;
 
+              // min order qty
               if (totalMinOrderQuantity < storeProductList[k].min_quantity) {
+
                 minOrderQuantity = Number.Get(storeProductList[k].min_quantity);
               } else {
-                minOrderQuantity = Number.Get(totalMinOrderQuantity);
+                if(totalMinOrderQuantity > storeProductList[k].max_quantity){
+                  minOrderQuantity = Number.Get(storeProductList[k].max_quantity);
+                }else{
+                  minOrderQuantity = Number.Get(totalMinOrderQuantity);
+                }
               }
+
+             // max order qty
               if (totalMaxOrderQuantity > storeProductList[k].max_quantity) {
                 maxOrderQuantity = Number.Get(storeProductList[k].max_quantity);
               } else {
-                maxOrderQuantity = Number.Get(totalMaxOrderQuantity);
+                if(totalMaxOrderQuantity < storeProductList[k].min_quantity){
+                  maxOrderQuantity = Number.Get(storeProductList[k].min_quantity);
+                }else{
+                  maxOrderQuantity = Number.Get(totalMaxOrderQuantity);
+                }
               }
               if (minOrderQuantity > maxOrderQuantity) {
-                maxOrderQuantity = minOrderQuantity
+                maxOrderQuantity = maxOrderQuantity
               }
 
               updateData.min_order_quantity = minOrderQuantity;
@@ -303,7 +331,6 @@ class StoreProductMinMaxQuantityUpdateService {
 
               updateDataArray.push(updateData);
 
-
             }
           }
         }
@@ -317,8 +344,12 @@ class StoreProductMinMaxQuantityUpdateService {
 
   static async update(companyId, productId) {
     try {
-
+      let replenishBy = await SettingService.getSettingValue(REPLENISHMENT_BY, companyId);
       //update min max order date by setting order days
+
+      if(Number.Get(replenishBy) == Replenishment.BY_ORDER_AVERAGE){
+        await this.updateByAverageOrderQty(companyId);
+      }
       let orderMinMaxObjBySetting = await this.getTotalMinMaxOrderQuantity(productId, companyId, false);
 
       if (orderMinMaxObjBySetting && ArrayList.isNotEmpty(orderMinMaxObjBySetting.updateDataArray)) {
@@ -334,6 +365,7 @@ class StoreProductMinMaxQuantityUpdateService {
 
     } catch (err) {
       console.log(err);
+      throw err
     }
   }
   static async updateByAverageOrderQty(companyId) {
@@ -380,7 +412,6 @@ const productMap = productList.reduce((map, product) => {
   return map;
 }, {});
 
-
 if (storeProductList && storeProductList.length > 0) {
 
   for (let k = 0; k < storeProductList.length; k++) {
@@ -422,9 +453,12 @@ if (storeProductList && storeProductList.length > 0) {
     await storeProductService.update({min_order_quantity:Number.roundOff(minOrderQuantity), max_order_quantity:Number.roundOff(maxOrderQuantity)},{
       where: { id: storeProductList[k].id },
     })
-  }}
+
+  }
+}
     } catch (err) {
       console.log(err);
+      throw  err
     }
   }
 }

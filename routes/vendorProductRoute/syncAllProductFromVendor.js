@@ -21,8 +21,12 @@ const Permission = require("../../helpers/Permission");
  * @param {*} products
  */
 const syncProduct = async (products, companyId) => {
- 
+  const hasPermission = await Permission.Has(
+    Permission.SUPPLIER_PRODUCT_SYNC_PRODUCTS_FROM_VENDOR,
+    req
+  );
 
+ 
   // Sync each product from account
   for (let product of products) {
     try {

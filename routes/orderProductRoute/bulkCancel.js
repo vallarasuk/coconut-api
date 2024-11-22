@@ -11,6 +11,7 @@ const OrderProductService = require("../../services/OrderProductService")
 async function bulkCancel(req, res, next) {
 
     try {
+        const hasPermission = await Permission.Has(Permission.ORDER_PRODUCT_EDIT, req);
 
 
         //get body data

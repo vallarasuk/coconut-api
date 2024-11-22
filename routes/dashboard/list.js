@@ -5,7 +5,9 @@ const Sequelize = require("sequelize");
 function list(req, res, next) {
   const data = req.query;
   const where = {};
-  where.user_id = req.user.id;
+  if (!req.isAdmin && !req.isManager && !req.isScrumMaster) {
+    where.user_id = req.user.id;
+  }
 
   const validOrder = ["ASC", "DESC"];
 

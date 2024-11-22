@@ -1,46 +1,20 @@
-/* eslint-disable no-mixed-spaces-and-tabs */
-const errors = require("restify-errors");
-
-// Utils
 const utils = require("../../lib/utils");
 const Request = require("../../lib/request");
 const Permission = require("../../helpers/Permission");
 const MediaServices = require("../../services/media");
-
-
-// Model
 const { Candidate,Media: MediaModal} = require("../../db").models;
-
 const { Media } = require("../../helpers/Media");
 const ObjectName = require("../../helpers/ObjectName");
 const statusService = require("../../services/StatusService");
 const History = require("../../services/HistoryService");
+const Number = require("../../lib/Number");
 
-function concatValue(from, to) {
-  let detail = null;
 
-  from = from ? parseInt(from, 10) : null;
-  to = to ? parseInt(to, 10) : null;
 
-  if (from && to) {
-    detail = `${from}.${to}`;
-  } else if (from) {
-    detail = from;
-  } else if (to) {
-    detail = `0.${to}`;
-  }
-
-  return detail;
-}
-/**
- *  Get Overall Experience
- *
- * @param {*} from
- * @param {*} to
- */
 async function add(req, res, next) {
+  const hasPermission = await Permission.Has(Permission.CANDIDATE_ADD, req);
 
- 
+  
   const data = req.body;
   let fileDetail = req && req?.files && req?.files?.media_file;
 
@@ -60,17 +34,28 @@ async function add(req, res, next) {
     const token = utils.md5Password(utils.getTimeStamp());
 
     const candidate = await Candidate.create({
-      first_name: data.firstName,
-      last_name: data.lastName,
-      phone: data.phone,
-      gender: data.gender,
-      marital_status: data.maritalStatus,
-      email: data.email,
-      position: data.position,
-      position_type: data.positionType,
+      first_name: data?.firstName,
+      last_name: data?.lastName,
+      phone: data?.phone,
+      gender: data?.gender,
+      marital_status: data?.maritalStatus,
+      email: data?.email,
+      position: data?.position,
+      position_type: data?.positionType,
       status: await statusService.getFirstStatus(ObjectName.CANDIDATE, companyId),
       owner_id: userId,
       company_id: companyId,
+      age: Number.Get(data?.age),
+      qualification: data?.qualification,
+      current_city: data?.currentCity,
+      current_state: data?.currentState,
+      permanent_city: data?.permanentCity,
+      permanent_state: data?.permanentState,
+      department: data?.department,
+      year_of_passing: data?.yearOfPassing,
+      expected_salary: data?.expected_salary,
+      message: data?.message,
+      staying_with: data?.stayingWith
     });
 
     if (fileDetail) {

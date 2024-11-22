@@ -13,7 +13,9 @@ const { product,vendorProduct,} = require("../../db").models;
  * Sync product from vendor product route
  */
 async function syncProduct (req, res, next){
-  
+    const hasPermission = await Permission.Has(Permission.PRODUCT_SYNC, req);
+ 
+
     const { id } = req.params;
 
     const companyId = req.user.company_id;

@@ -12,8 +12,9 @@ const Permission = require("../../helpers/Permission");
 
 async function del(req, res, next) {
 
+    const hasPermission = await Permission.Has(Permission.TICKET_DELETE, req);
 
-  
+    
 
     const { id } = req.params;
 

@@ -1,7 +1,7 @@
 const { Op } = require("sequelize");
 const { BAD_REQUEST, OK } = require("../../helpers/Response");
 const DataBaseService = require("../../lib/dataBaseService");
-const { account } = require("../../db").models;
+const { account,AccountType } = require("../../db").models;
 const Request = require("../../lib/request");
 const Vendor = require("../../helpers/Account");
 const accountService = new DataBaseService(account);
@@ -42,15 +42,28 @@ async function list(req, res, next) {
       category: data.accountCategory,
       companyId: companyId
     }
-    let typeWhere={}
-    if(Number.isNotNull(data?.show_purchase)){
-      typeWhere.show_purchase = true
-    }
-    let typeIds = await AccountTypeService.getAccountTypeByCategory(params,typeWhere)
+  
+    let typeIds = await AccountTypeService.getAccountTypeByCategory(params)
     where.type={
       [Op.in]: typeIds
     }
   }
+  let typeWhere = {};
+    
+  if (Number.isNotNull(data?.show_purchase)) {
+    typeWhere.show_purchase = true;
+    typeWhere.company_id = companyId;
+  
+    let accountTypes = await AccountType.findAll({
+      where: typeWhere
+    });
+  
+    let typeIds = accountTypes.map(accountType => accountType.id);
+      where.type = {
+      [Op.in]: typeIds
+    };
+  }
+  
 
   const searchTerm = data.search ? data.search.trim() : null;
   if (searchTerm) {

@@ -12,7 +12,10 @@ const statusUpdate = async (req, res) => {
     let { id } = req.params;
 
     try {
-       
+        // Validate Permission exist or not.
+        const hasPermission = await Permission.GetValueByName(Permission.TRANSFER_PRODUCT_EDIT, req.role_permission);
+      
+
         //get Transfer product  Id
         //get quantity
         const { status } = req.body;

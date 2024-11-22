@@ -13,7 +13,12 @@ const StoreProductService = require('../../service/storeProductService')
 const bulkInsert = async (req, res) => {
 
     try {
-
+        // Validate Permissions exist or not.
+        const hasPermission = await Permission.GetValueByName(
+            Permission.TRANSFER_PRODUCT_EDIT,
+            req.role_permission
+        );
+     
 
         //get company Id from request
         const companyId = Request.GetCompanyId(req);

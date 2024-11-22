@@ -14,27 +14,26 @@ const StatusService = require("../../services/StatusService");
 const Setting = require("../../helpers/Setting");
 const ObjectName = require("../../helpers/ObjectName");
 const Currency = require("../../lib/currency");
-const { Location, account,order: orderModel } = require("../../db").models;
+const { Location, account, order: orderModel } = require("../../db").models;
 const PhoneNumber = require("../../lib/PhoneNumber");
 const LocationService = require("../../services/LocationService");
 const Response = require("../../helpers/Response");
-const { CATEGORY_CUSTOMER } = require("../../helpers/Account");
-const Status = require("../../helpers/Status");
 const history = require("../../services/HistoryService");
-const OrderTypeService = require("../../services/OrderTypeService");
-const AccountTypeService = require("../../services/AccountTypeService");
-const UserService = require("../../services/UserService");
-const SlackService = require("../../services/SlackService");
-const DateTime = require("../../lib/dateTime");
 async function create(req, res, next) {
   try {
     const companyId = Request.GetCompanyId(req);
-   let locationId = Request.getCurrentLocationId(req)
+    let locationId = Request.getCurrentLocationId(req);
     if (!companyId) {
       return res.json(Response.BAD_REQUEST, { message: "Company Not Found" });
     }
 
+    let rolePermission = Request.getRolePermission(req);
 
+    // order add permission check
+    const hasPermission = await Permission.GetValueByName(
+      Permission.ORDER_ADD,
+      rolePermission
+    );
 
     let currendtShiftId = Request.getCurrentShiftId(req);
 
@@ -51,10 +50,15 @@ async function create(req, res, next) {
       new Date(),
       companyId
     );
-    let storeId = locationId ? Number.Get(locationId) :body?.storeId ?Number.Get(body?.storeId): null;
+    let storeId = locationId
+      ? Number.Get(locationId)
+      : body?.storeId
+      ? Number.Get(body?.storeId)
+      : null;
 
     let salesExecutiveId = body?.sales_executive_user_id
-    ? Number.Get(body.sales_executive_user_id):body.owner
+      ? Number.Get(body.sales_executive_user_id)
+      : body.owner
       ? Number.Get(body.owner)
       : attendance
       ? attendance.user_id
@@ -94,7 +98,7 @@ async function create(req, res, next) {
       nextLocationOrderNumber += 1;
 
       if (storeDetail?.location_code != null) {
-        formatedNextOrderNumber = `${storeDetail?.location_code}-${nextLocationOrderNumber}`;
+        formatedNextOrderNumber = `${nextLocationOrderNumber}`;
       } else {
         formatedNextOrderNumber = `${nextLocationOrderNumber}`;
       }
@@ -113,13 +117,18 @@ async function create(req, res, next) {
 
       nextCompanyOrderNumber += 1;
       if (orderCode != "") {
-        formatedNextOrderNumber = `${orderCode}-${nextCompanyOrderNumber}`;
+        formatedNextOrderNumber = `${nextCompanyOrderNumber}`;
       } else {
         formatedNextOrderNumber = `${nextCompanyOrderNumber}`;
       }
     }
 
-
+    let statusData = await StatusService.getFirstStatusDetail(
+      ObjectName.ORDER_TYPE,
+      companyId,
+      null,
+      1
+    );
     let accountData
     let accountExist
    
@@ -150,14 +159,13 @@ async function create(req, res, next) {
        accountData = await account.create(createData);
       }
     }
-    let statusData =  await StatusService.getFirstStatusDetail(ObjectName.ORDER_TYPE, companyId,null,1)
     const orderData = {
       store_id: storeId,
       date: new Date(),
       order_number: formatedNextOrderNumber,
       company_id: companyId,
-      status:statusData && statusData?.id,
-      owner: body?.owner?body?.owner:salesExecutiveId,
+      status: statusData && statusData?.id,
+      owner: body?.owner ? body?.owner : salesExecutiveId,
       payment_type: body?.payment_type,
       shift: Number.isNotNull(body?.shift) ? body?.shift : currendtShiftId,
       createdBy: Number.Get(userId),
@@ -166,16 +174,15 @@ async function create(req, res, next) {
         body?.customer_phone_number &&
         PhoneNumber.Get(body?.customer_phone_number),
         type: 1 ,
-        customer_account: Number.isNotNull(body?.customer_account) ? body?.customer_account :Number.isNotNull(accountExist) ?  accountExist?.dataValues?.id : Number.isNotNull(accountData) ? accountData?.id: null,
+      customer_account: Number.isNotNull(body?.customer_account)
+        ? body?.customer_account
+        : null,
       upi_amount: Currency.Get(body?.upi_amount),
       cash_amount: Currency.Get(body?.cash_amount),
     };
+
     const response = await orderService.create(orderData);
 
-    if (Number.isNull(account)) { 
-        await orderModel.update({customer_account:accountData?.id},{where:{id:response?.id}})
-      }
-    
     if (response) {
       if (
         orderNumberGeneration &&
@@ -205,57 +212,11 @@ async function create(req, res, next) {
       message: "Order Added",
       orderId: orderId,
       orderDetail: response,
-      account_id :  accountExist ?  accountExist.dataValues.id : accountData && accountData?.id
     });
 
     res.on("finish", async () => {
       //create a log for error
       history.create("Order Added", req, ObjectName.ORDER, orderId);
-
-      if(statusData &&( statusData?.notify_to_owner == Status.NOTIFY_TO_OWNER_ENABLED)){
-
-    const owner = response && response.dataValues && response.dataValues.owner;
-    if(Number.isNotNull(owner)){
-      const getSlackId = await UserService.getSlack(owner, companyId);
-
-      if (getSlackId) {
-        let userDefaultTimeZone =  Request.getTimeZone(req);
-
-         let locationName =  await LocationService.getName(response.dataValues.store_id,companyId)
-
-         let text = `<@${getSlackId?.slack_id}>  Order Added \n`;
-
-         if (response?.dataValues?.order_number) {
-          text += `Order Number: ${response?.dataValues?.order_number}\n`;
-        }
-         // Check if locationName exists before adding it to the text
-         if (locationName) {
-           text += `Location: ${locationName}\n`;
-         }
-         
-         // Check if createdAt exists before adding the date to the text
-         if (response?.dataValues?.createdAt) {
-           text += `Date: ${DateTime.getDateTimeByUserProfileTimezone(response.dataValues.createdAt, userDefaultTimeZone)}\n`;
-         }
-         
-         // Check if account exists before adding the date to the text
-
-       if(Number.isNotNull(response?.dataValues?.customer_account)){
-
-        let  accountData = await account.findOne({
-          where: {company_id: companyId,id : response.dataValues.customer_account},
-      });
-
-         if (accountData?.name !== undefined && accountData?.name !== null) {
-          text += `Customer: ${accountData?.name}\n`;
-        }
-
-      }
-          SlackService.sendMessageToUser(companyId, getSlackId?.slack_id, text);
-
-      }
-    }
-    }
     });
   } catch (err) {
     console.log(err);

@@ -40,7 +40,10 @@ class fineService {
     static async create(req, res,next) {
         try {
           let data = req.body;
-          
+            if((req && req?.user && !data?.company_id)){
+            const hasPermission = await Permission.Has(Permission.FINE_ADD, req);
+
+            }
 
             let companyId;
             if(req && req?.user){
@@ -62,8 +65,13 @@ class fineService {
                 due_date: data?.due_date ? data?.due_date:DateTime.getSQlFormattedDate(new Date()),
                 reviewer: data?.reviewer ? data?.reviewer :statusData?.default_reviewer || null,
                 object_name:data?.object_name?data?.object_name:null,
-                object_id:data?.object_id?data?.object_id:null
+                object_id:data?.object_id?data?.object_id:null,
             }
+
+            if(data?.createdAt){
+              createData.createdAt = data?.createdAt
+            }
+            
             const detail = await FineBonus.create(createData);
             if(res){
               res.on('finish', async () => {
@@ -85,7 +93,8 @@ class fineService {
 
     static async del(req, res) {
         try {
-      
+            const hasPermission = await Permission.Has(Permission.FINE_DELETE, req);
+
             const id = req.params.id;
             const company_id = Request.GetCompanyId(req);
 
@@ -153,7 +162,8 @@ class fineService {
     // Update 
     static async update(req, res) {
         try {
-           
+            const hasPermission = await Permission.Has(Permission.FINE_EDIT, req);
+
             const companyId = Request.GetCompanyId(req);
             const { id } = req.params;
             const data = req.body;
@@ -286,7 +296,6 @@ class fineService {
     
         where.user = userId;
         }
-        let allowToViewIds = await statusService.GetAllowToViewStatusIds(ObjectName.FINE, companyId)
 
         if(Number.isNotNull(user)){
             where.user=user
@@ -306,13 +315,25 @@ class fineService {
 
    
       if (!hasFineManageOthersPermission) {
-        if (allowToViewIds && allowToViewIds.length > 0) {
+       
           if (Number.isNotNull(status)) {
             Where.id(where, "status", status)
           } else {
-            where.status = { [Op.in]: allowToViewIds };
+            if(isBonusType) {
+              let completedStatusDetail = await statusService.getAllStatusByGroupId(ObjectName.BONUS, Status.GROUP_COMPLETED, companyId);
+
+              let statusId = ArrayList.isArray(completedStatusDetail)? completedStatusDetail.map((value) =>value?.id):[]
+   
+              where.status = statusId ;
+
+            }else{
+              let completedStatusDetail = await statusService.getAllStatusByGroupId(ObjectName.FINE, Status.GROUP_COMPLETED, companyId);
+
+              let statusId = ArrayList.isArray(completedStatusDetail)? completedStatusDetail.map((value) =>value?.id):[]
+
+              where.status =  statusId;
+            }
           }
-        }
       } else {
         Where.id(where, "status", status)
       }
@@ -415,13 +436,13 @@ class fineService {
           company_id: companyId,
           user: hasFineManageOthersPermission ? Number.isNotNull(user) ? user : null : req.user.id ,
           type: Number.isNotNull(type) ? type : null,
-          status: (!hasFineManageOthersPermission && allowToViewIds && allowToViewIds.length > 0) ? Number.isNotNull(status) ? [status] : allowToViewIds  : Number.isNotNull(status) ? [status] :null,
+          status:where.status,
           startDate: date?.startDate ? date?.startDate: startDate,
           endDate: date?.endDate ? date?.endDate: endDate,
           searchTerm,
           objectName: Number.isNotNull(req.query.object_name) ? req.query.object_name : null,
           objectId: Number.isNotNull(req.query.object_id) ? req.query.object_id : null
-        }
+      } 
 
     // Ensure isBonusType is interpreted as a boolean
     if (!type && (isBonusType || isFineType)) {
@@ -539,7 +560,8 @@ class fineService {
 
   static async bulkupdate(req, res) {
     try {
-    
+      const hasPermission = await Permission.Has(Permission.FINE_EDIT, req);
+
       const companyId = Request.GetCompanyId(req);
       const data = req.body;
 
@@ -691,7 +713,7 @@ class fineService {
   
       if (updatedData?.date && olddata?.date !== updatedData.date) {
         if (olddata?.date !== updatedData.date) {
-          auditLogMessage.push(`Date Changed to ${updatedData?.date}\n`);
+          auditLogMessage.push(`Date Changed to ${DateTime.shortMonthDate(updatedData?.date)}\n`);
         }
       }
   
@@ -847,7 +869,7 @@ class fineService {
 
       let whereCondition=""
       
-      params?.status ? whereCondition += ` AND "fine_bonus".status IN (${params?.status.join(', ')})` :""
+      params?.status ? whereCondition += ` AND "fine_bonus".status IN (${params?.status})` :""
       params?.user ? whereCondition +=  ` AND "fine_bonus"."user" = ${params?.user}` :""
       params?.type ? whereCondition += ` AND "fine_bonus"."type" IN (${params?.type})` :""
       params?.startDate ? whereCondition += ` AND "fine_bonus"."date" >= '${params?.startDate}'` : ""

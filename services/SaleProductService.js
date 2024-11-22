@@ -333,8 +333,11 @@ const del = async (req, res) => {
 };
 
 const updateStatus = async (req, res, next) => {
+  const hasPermission = await Permission.Has(
+    Permission.SALE_SETTLEMENT_STATUS_UPDATE,
+    req
+  );
 
- 
 
   const data = req.body;
   const { id } = req.params;

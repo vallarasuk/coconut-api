@@ -66,9 +66,9 @@ async function getSetting(req, res, next) {
                 });
             });
 
-            if (settings && !settings.length > 0) {
-                return res.json(400, { message: "Setting not found" });
-            }
+            // if (settings && !settings.length > 0) {
+            //     return res.json(400, { message: "Setting not found" });
+            // }
 
             const data = {
                 settings,

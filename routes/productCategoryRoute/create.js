@@ -17,7 +17,9 @@ const Permission = require('../../helpers/Permission');
  * Create product category route
  */
 async function create(req, res, next) {
+  const hasPermission = await Permission.Has(Permission.PRODUCT_CATEGORY_ADD, req);
 
+ 
   const data = req.body;
 
   // Validate name

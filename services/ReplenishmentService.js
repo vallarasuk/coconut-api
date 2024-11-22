@@ -72,15 +72,7 @@ class ReplenishService {
       rolePermission
     );
 
-    if (!hasPermission) {
-      let lastCheckIn = Request.getCurrentLocationId(req);
-
-      if (!lastCheckIn) {
-        return res.json(Response.BAD_REQUEST, {
-          message: "Check-in record is missing",
-        });
-      }
-    }
+   
 
       let {
         page,
@@ -145,10 +137,8 @@ class ReplenishService {
       }
       if (Number.isNotNull(status)) {
         where.status = status;
-      }else if(!hasPermission && userId){
-          where.status = Status.PENDING
       }
-      if (!hasPermission && userId) {
+      if (userId) {
         where.owner_id = userId;
       }
 

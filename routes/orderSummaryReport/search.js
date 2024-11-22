@@ -31,6 +31,9 @@ async function search(req, res, next) {
       });
     }
 
+    const hasPermission = await Permission.Has(Permission.ORDER_REPORT_VIEW, req);
+
+    
 
     let statusDetail = await StatusService.Get(ObjectName.ORDER_TYPE, Status.GROUP_CANCELLED, companyId);
 

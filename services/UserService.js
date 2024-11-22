@@ -43,6 +43,7 @@ const Permission = require("../helpers/Permission");
 const Response = require("../helpers/Response");
 const ArrayList = require("../lib/ArrayList");
 const user = require("../helpers/User");
+const { isKeyAvailable } = require("../lib/validator");
 
 module.exports = {
   /**
@@ -182,7 +183,7 @@ module.exports = {
 
       const companyId = Request.GetCompanyId(req);
 
-      const { status, userIds, forceLogout, force_sync, reset_mobile_data, profile_picture_update,force_logout_soft, designation, salary } =
+      const { status, userIds, forceLogout, force_sync, reset_mobile_data, profile_picture_update,force_logout_soft, designation, salary, allow_leave } =
         data;
 
       if (userIds && userIds.length == 0) {
@@ -223,6 +224,8 @@ module.exports = {
 		if (salary) {
 			updateData.salary = salary;
 		}
+
+			updateData.allow_leave = allow_leave;
 	
 		if (Object.keys(updateData).length > 0) {
 			await UserEmploymentService.update(
@@ -654,6 +657,9 @@ async  AddStartdateAndEnddateFromAttendance(
 		  if(userDetail && userDetail?.last_checkin_at){
 			reIndexData.last_checkin_at = userDetail.last_checkin_at
 		  }
+
+			reIndexData.allow_leave = userDetail.allow_leave
+
 		  await UserIndex.create(reIndexData);
 
 		}catch(err){
@@ -772,41 +778,16 @@ async  AddStartdateAndEnddateFromAttendance(
 		  });
 		  return false;
 		}
-		data.companyId = companyId
-
 		let rolePermission = Request.getRolePermission(req);
 
-		if(individualPermision){
-			const hasPermission = await Permission.GetValueByName(
-				individualPermision,
-				rolePermission
-			  );
-			  if (!hasPermission) {
-				res.json(Response.BAD_REQUEST, {
-				  message: "Permission Denied",
-				});
-				return false;
-			  }
-		}
+		data.companyId = companyId
 		
+		const manageOthers = await Permission.GetValueByName(
+			manageOther,
+			rolePermission
+		  )
+		  data.manageOthers=manageOthers
 
-		if(manageOther){
-			const manageOthers = await Permission.GetValueByName(
-				manageOther,
-				rolePermission
-			  )
-			  if (!manageOthers) {
-				let lastCheckIn = Request.getCurrentLocationId(req);
-				if (!lastCheckIn) {
-				  res.json(Response.BAD_REQUEST, {
-					message: "Check-in record is missing",
-				  });
-				  return false;
-				}
-			  }
-			  data.manageOthers=manageOthers
-		}
-		
 		return data;
 	}catch(err){
 		console.log(err);
@@ -829,5 +810,73 @@ async  AddStartdateAndEnddateFromAttendance(
 			}
 		}
 
+	},
+	async getList(params) {
+		try {
+			const where = {};
+
+			where.company_id = params?.companyId;
+
+			if (ArrayList.isArray(params.excludeIds)) {
+				where.id = {
+					[Op.notIn]: params?.excludeIds
+				}
+			}
+
+			let statusValue = !isKeyAvailable(params, "status") ? STATUS_ACTIVE : isKeyAvailable(params, "status") && Number.isNotNull(params?.status) ? params?.status : null;
+			let defaultValue = isKeyAvailable(params, "defaultValue") && Number.isNotNull(params?.defaultValue) ? params?.defaultValue : null
+			where[Op.or] = [
+				{ status: { [Op.or]: [statusValue, null] } },
+				{ id: { [Op.or]: [defaultValue, null] } }
+			]
+
+			const searchTerm = params?.search ? params?.search.trim() : null;
+			if (searchTerm) {
+				where[Op.or] = [
+					{
+						name: {
+							[Op.iLike]: `%${searchTerm}%`,
+						},
+					},
+				];
+			}
+
+
+			const query = {
+				order: [['name', 'ASC']],
+				where,
+			};
+
+			const userDetails = await userService.findAndCount(query);
+			let list = [];
+			for (let i in userDetails.rows) {
+				let { id, name, last_name, media_url } = userDetails.rows[i];
+				let logedInUserData = {};
+				if (params?.userId == id) {
+					(logedInUserData.id = id),
+						(logedInUserData.first_name = name),
+						(logedInUserData.last_name = last_name),
+						(logedInUserData.media_url = media_url),
+						(logedInUserData.isLogedInUser = true);
+				}
+
+				let data = {
+					id: id,
+					first_name: name,
+					last_name: last_name,
+					media_url: media_url,
+					...logedInUserData,
+				};
+
+				list.push(data);
+			}
+
+			return {
+				data: list,
+				loggedInUserId: params?.userId,
+			}
+		} catch (err) {
+			console.log(err);
+		}
 	}
 	};

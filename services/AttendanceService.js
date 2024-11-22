@@ -64,6 +64,7 @@ const LocationService = require("./LocationService");
 const ShiftService = require("../services/services/ShiftService");
 const String = require("../lib/string");
 const AttendanceTypeService = require("./AttendanceTypeService");
+const PreferredLocationService = require("./PreferredLocationService");
 
 const dateTime = new DateTime();
 
@@ -972,8 +973,11 @@ const attendanceService = (module.exports = {
   AttendanceDelete: async function (ids, req, res) {
     try {
       const companyId = Request.GetCompanyId(req);
-    
-    
+      const hasPermission = await Permission.Has(
+        Permission.ATTENDANCE_DELETE,
+        req
+      );
+
 
       // If ids is not an array, convert it to an array
       if (!Array.isArray(ids)) {
@@ -1059,7 +1063,7 @@ const attendanceService = (module.exports = {
   },
 
   addFineForLateCheckIn: async function (lateCheckInParams) {
-    let { user_id, late_hours, startTime, gracePeriod, login, timeZone, companyId, location_id, shift_id, req, roleId } = lateCheckInParams;
+    let { user_id, late_hours, startTime, gracePeriod, login, timeZone, companyId, location_id, shift_id, req, roleId, object_id } = lateCheckInParams;
 
     let startTimeValue = DateTime.addMinutesToTime(startTime ? startTime : "00:00", gracePeriod)
     let currentTime = DateTime.getGmtHoursAndMinutes(new Date())
@@ -1083,7 +1087,9 @@ const attendanceService = (module.exports = {
                 type: type,
                 amount: default_amount,
                 company_id: companyId,
-                notes: `CheckIn At: ${DateTime.getCurrentDateTimeByUserProfileTimezone(login, timeZone)} `
+                notes: `CheckIn At: ${DateTime.getCurrentDateTimeByUserProfileTimezone(login, timeZone)} `,
+                object_id:object_id,
+                object_name:ObjectName.ATTENDANCE
               };
               let response = await fineService.create({ body: createData, user: { id: user_id, company_id: companyId } }, null, null);
               return response
@@ -1108,7 +1114,7 @@ const attendanceService = (module.exports = {
   },
 
   findAddForNoStockEntry: async function (noStockEntryParams) {
-    let { user_id, date, timeZone, shift, store_id, roleId, companyId, req } = noStockEntryParams;
+    let { user_id, date, timeZone, shift, store_id, roleId, companyId, req, object_id } = noStockEntryParams;
     let isEnableFineAddForNoStockEntry = await getSettingValueByObject(
       Setting.FINE_ADD_FOR_STOCK_ENTRY,
       companyId,
@@ -1155,7 +1161,9 @@ const attendanceService = (module.exports = {
                 type: stockEntryMissingFineType,
                 amount: default_amount,
                 company_id: companyId,
-                notes: ` Date: ${DateTime.shortMonthDate(new Date(date))} \n Shift: ${shift?.name} \n Stock Entry Count: ${stockEntryProduct} \n Missing Stock Entry Count: ${missingStockEntryProductCount} `
+                notes: ` Date: ${DateTime.shortMonthDate(new Date(date))} \n Shift: ${shift?.name} \n Stock Entry Count: ${stockEntryProduct} \n Missing Stock Entry Count: ${missingStockEntryProductCount} `,
+                object_id: object_id,
+                object_name:ObjectName.STOCK_ENTRY
               };
               let response = await fineService.create({ body: createData, user: { id: user_id, company_id: companyId } }, null, null);
               return {
@@ -1182,7 +1190,7 @@ const attendanceService = (module.exports = {
   },
 
   findAddForMinimumReplenishmentCount: async function (replenishmentMissingParams) {
-    let { user_id, date, shift, roleId, companyId, req } = replenishmentMissingParams;
+    let { user_id, date, shift, roleId, companyId, req, object_id } = replenishmentMissingParams;
 
     let isEnableFineAddForMinimumReplenishmentCount = await getSettingValueByObject(Setting.FINE_ADD_FOR_REPLENISHMENT_MISSING, companyId, roleId, ObjectName.ROLE);
     if (Number.isNotNull(isEnableFineAddForMinimumReplenishmentCount) && isEnableFineAddForMinimumReplenishmentCount == "true") {
@@ -1212,7 +1220,9 @@ const attendanceService = (module.exports = {
               type: replenishmentCountFineType,
               amount: default_amount,
               company_id: companyId,
-              notes: ` Date: ${DateTime.shortMonthDate(new Date(date))} \n Shift: ${shift?.name} \n Replenishment Count: ${data?.totalProductCount} \n Missing Replenishment Count: ${minusReplenishmentCount} `
+              notes: ` Date: ${DateTime.shortMonthDate(new Date(date))} \n Shift: ${shift?.name} \n Replenishment Count: ${data?.totalProductCount} \n Missing Replenishment Count: ${minusReplenishmentCount} `,
+              object_id:object_id,
+              object_name:ObjectName.ATTENDANCE
             };
             let response = await fineService.create({ body: createData, user: { id: user_id, company_id: companyId } }, null, null);
             if(response){
@@ -1454,7 +1464,7 @@ const attendanceService = (module.exports = {
 
   },
 
-  bonusAddForExtraStockEntry: async function (user_id, date, timeZone, shift, store_id, roleId, companyId) {
+  bonusAddForExtraStockEntry: async function (user_id, date, timeZone, shift, store_id, roleId, companyId, attendanceId) {
     let isEnableBonusAddForExtraStockEntry = await getSettingValueByObject(
       Setting.BONUS_ADD_FOR_EXTRA_STOCK_ENTRY,
       companyId,
@@ -1504,6 +1514,8 @@ const attendanceService = (module.exports = {
             company_id: companyId,
             notes: ` Date: ${DateTime.shortMonthDate(new Date(date))} \n Shift: ${shift?.name} \n Stock Entry Count: ${stockEntryProduct} \n Extra Stock Entry Count: ${extraStockEntryProductCount} `,
             objectName: ObjectName.BONUS,
+            object_id:attendanceId,
+            object_name:ObjectName.STOCK_ENTRY
           };
           let response = await fineService.create({ body: createData, user: { id: user_id, company_id: companyId } }, null, null);
           return {
@@ -1529,7 +1541,7 @@ const attendanceService = (module.exports = {
     }
   },
 
-  bonusAddForExtraReplenishmentCount: async function (user_id, date, shift, roleId, companyId) {
+  bonusAddForExtraReplenishmentCount: async function (user_id, date, shift, roleId, companyId, attendanceId) {
 
 
     let isEnableBonusAddForExtraReplenishmentCount = await getSettingValueByObject(Setting.BONUS_ADD_FOR_EXTRA_REPLENISHMENT, companyId, roleId, ObjectName.ROLE);
@@ -1562,6 +1574,7 @@ const attendanceService = (module.exports = {
               company_id: companyId,
               notes: ` Date: ${DateTime.shortMonthDate(new Date(date))} \n Shift: ${shift?.name} \n Replenishment Count: ${data?.totalProductCount} \n Extra Replenishment Count: ${extraReplenishmentCount} `,
               objectName: ObjectName.BONUS,
+              object_id:attendanceId,
             };
             let response = await fineService.create({ body: createData, user: { id: user_id, company_id: companyId } }, null, null);
             return {
@@ -1584,7 +1597,7 @@ const attendanceService = (module.exports = {
   },
 
   //Early Check-In Bonus Add
-  addBonusForAdditionalHours: async function (user_id, additional_hours, endTime, roleId, timeZone, companyId) {
+  addBonusForAdditionalHours: async function (user_id, additional_hours, endTime, roleId, timeZone, companyId, attendanceId) {
 
     let endTimeValue = DateTime.addMinutesToTime(endTime ? endTime : "00:00")
     let currentTime = DateTime.getGmtHoursAndMinutes(new Date())
@@ -1614,7 +1627,9 @@ const attendanceService = (module.exports = {
                   amount: default_amount,
                   company_id: companyId,
                   notes: `CheckOut At: ${DateTime.getCurrentDateTimeByUserProfileTimezone(new Date(), timeZone)} `,
-                  objectName: ObjectName.BONUS
+                  objectName: ObjectName.BONUS,
+                  object_id:attendanceId,
+                  object_name:ObjectName.ATTENDANCE
                 };
                 let response = await fineService.create({ body: createData, user: { id: user_id, company_id: companyId } }, null, null);
                 return response
@@ -1641,7 +1656,7 @@ const attendanceService = (module.exports = {
   },
 
   addFineForEarlyCheckOut: async function (earlyCheckOutParams) {
-    let { attendanceDetail, roleId, timeZone, companyId, early_hours, user_id,req } = earlyCheckOutParams
+    let { attendanceDetail, roleId, timeZone, companyId, early_hours, user_id,req, object_id } = earlyCheckOutParams
     let currentTime = DateTime.getCurrentTimeByTimeZone(timeZone);
     let shiftEndTime = DateTime.convertGmtTimeToUserTimeZone(attendanceDetail?.shift?.end_time, timeZone);
     if (Number.isNotNull(attendanceDetail?.allow_early_checkout)) {
@@ -1667,7 +1682,9 @@ const attendanceService = (module.exports = {
               type: type,
               amount: default_amount,
               company_id: companyId,
-              notes: `CheckOut At: ${DateTime.getCurrentDateTimeByUserProfileTimezone(new Date(), timeZone)} `
+              notes: `CheckOut At: ${DateTime.getCurrentDateTimeByUserProfileTimezone(new Date(), timeZone)} `,
+              object_id:object_id,
+              object_name:ObjectName.ATTENDANCE
             };
             let response = await fineService.create({ body: createData, user: { id: user_id, company_id: companyId } }, null, null);
             if(response){
@@ -1711,18 +1728,34 @@ const attendanceService = (module.exports = {
     }
   },
 
-  addBonusForLateCheckOut: async function (user_id, endTime, lateCheckOutHours, timeZone, companyId) {
+  addBonusForLateCheckOut: async function (user_id, endTime, lateCheckOutHours, timeZone, companyId,logoutTime,startDate,endDate,attendanceId) {
     let endTimeValue = DateTime.addMinutesToTime(endTime ? endTime : "00:00")
-    let currentTime = DateTime.getGmtHoursAndMinutes(new Date())
+    let currentTime = DateTime.getGmtHoursAndMinutes(logoutTime)
     if (DateTime.isValidDate(endTime)) {
       if (endTimeValue < currentTime) {
         if (lateCheckOutHours && lateCheckOutHours > 0) {
           let type = await getSettingValue(Setting.ATTENDANCE_LATE_CHECK_OUT_BONUS_TYPE, companyId);
           if (Number.isNotNull(type)) {
 
+            const isFineExites = await FineBonus.findOne({
+              where: {
+                  user: user_id ,
+                   type: type,
+                    company_id:companyId,
+                    date: {
+                      [Op.and]: {
+                        [Op.gte]: DateTime.toGMT(startDate,timeZone),
+                        [Op.lte]: DateTime.toGMT(endDate,timeZone),
+                      },
+                    },
+                  },
+          });
+
+          if(!isFineExites){
             const tagDetail = await Tag.findOne({
               where: { id: type, company_id: companyId },
             });
+            
             if (Number.isNotNull(tagDetail)) {
               let default_amount = lateCheckOutHours * Number.GetFloat(tagDetail?.default_amount);
               let createData = {
@@ -1730,8 +1763,12 @@ const attendanceService = (module.exports = {
                 type: type,
                 amount: default_amount,
                 company_id: companyId,
-                notes: `CheckOut At: ${DateTime.getCurrentDateTimeByUserProfileTimezone(new Date(), timeZone)} `,
+                notes: `CheckOut At: ${DateTime.getCurrentDateTimeByUserProfileTimezone(logoutTime, timeZone)} `,
                 objectName: ObjectName.BONUS,
+                date: startDate,
+                createdAt: logoutTime,
+                object_id:attendanceId,
+                object_name:ObjectName.ATTENDANCE
               };
               let response = await fineService.create({ body: createData, user: { id: user_id, company_id: companyId } }, null, null);
               return {
@@ -1740,6 +1777,7 @@ const attendanceService = (module.exports = {
             } else {
               return null
             }
+          }
           } else {
             return null
           }
@@ -1882,6 +1920,18 @@ const attendanceService = (module.exports = {
         }
 
       }
+    }
+  },
+
+  leaveValidation: async function (req, res, next) {
+    let companyId = Request.GetCompanyId(req);
+    let userId = Request.getUserId(req);
+
+    let preferredLocation = await PreferredLocationService.getFirstRecord(companyId, userId)
+    if (Number.isNotNull(req?.user?.allow_leave)) {
+      res.json(Response.OK, { message: "Leave Approval Enabled", data:{shift_id: preferredLocation?.shift_id, location_id: preferredLocation?.location_id}, isLeave:true })
+    } else {
+      res.json(Response.OK, { message: "Get Your Manager Approval", data:{shift_id: preferredLocation?.shift_id, location_id: preferredLocation?.location_id}, isLeave:false })
     }
   }
 });

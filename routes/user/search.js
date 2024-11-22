@@ -11,6 +11,8 @@ const Number = require("../../lib/Number");
 async function search(req, res, next) {
   try {
     //Permission Check
+    const hasPermissions = await Permission.Has(Permission.USER_VIEW, req);
+    const manageOthersPermission = await Permission.Has(Permission.USER_MANAGE_OTHERS, req);
    
 
     let { page, pageSize, search, status, sort, sortDir,  role, role_id } = req.query;
@@ -77,6 +79,9 @@ async function search(req, res, next) {
       whereClause += ` AND "user_index"."status" = ${status}`
     }
 
+    if(!manageOthersPermission){
+      whereClause += ` AND "user_index"."user_id" = ${userId}`
+    }
 
     if(Number.isNotNull(role) || role_id){
       whereClause += ` AND "user_index"."role_id" = ${role ? role:role_id}`
@@ -203,7 +208,6 @@ async function search(req, res, next) {
         status: userData.status,
         userImage: userData.media_url,
         mobileNumber1: userData.mobile_number1,
-        mobileNumber2: userData.mobile_number2,
         last_loggedin_at: DateTime.getDateTimeByUserProfileTimezone(userData?.last_loggedin_at,timeZone),
         address1: userData.address1,
         address2: userData.address2,
@@ -221,7 +225,8 @@ async function search(req, res, next) {
         primary_location:  userData?.primary_location_name,
         primary_shift:  userData?.primary_shift_name,
         current_location: userData?.current_location_name,
-        current_shift: userData?.current_shift_name
+        current_shift: userData?.current_shift_name,
+        allow_leave: userData?.allow_leave == true ? "Enabled" : userData?.allow_leave == false ? "Disabled": ""
       });
       totalCount = userData?.total_count
     }

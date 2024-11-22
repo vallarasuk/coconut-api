@@ -12,6 +12,7 @@ const { Media: MediaModal} = require('../../db').models;
 
 
 const create = async (req, res) => {
+  const hasPermission = await Permission.Has(Permission.TICKET_ADD, req);
  
   const company_id = Request.GetCompanyId(req);
   try{

@@ -7,6 +7,7 @@ const String = require('../../lib/string');
 const User = require('../../helpers/User');
 const Attendances = require('../../helpers/Attendance');
 const { ACTIVE_STATUS } = require('../../helpers/ProjectUser');
+const AttendanceTypeService = require("../../services/AttendanceTypeService");
 
 const search = async (req, res) => {
   try {
@@ -150,7 +151,7 @@ const search = async (req, res) => {
     let AttendanceList = await AttendanceCount();
     let AttendanceListHours = await sumAttendanceHours();
 
-    let workingDayIds = await AttendanceTypeService.getAttendanceTypeId({is_working_day:true})
+      let workingDayIds = await AttendanceTypeService.getAttendanceTypeId({is_working_day:true})
       let leaveIds = await AttendanceTypeService.getAttendanceTypeId({is_leave:true})
       let additionalDayIds = await AttendanceTypeService.getAttendanceTypeId({is_additional_day:true})
       let absentDayIds = await AttendanceTypeService.getAttendanceTypeId({is_absent:true})

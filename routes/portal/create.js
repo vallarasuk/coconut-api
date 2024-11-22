@@ -9,7 +9,9 @@ const { hasPermission } = require("../../services/UserRolePermissionService");
 
 async function create(req, res, next) {
   try {
-  
+    //Permission Check
+    const hasPermissions = await hasPermission(Permission.PORTAL_ADD, req);
+
 
     const data = req.body;
 

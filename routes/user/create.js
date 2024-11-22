@@ -19,11 +19,13 @@ const Account = require("../../helpers/Account");
 const Status = require("../../helpers/Status");
 const { UserEmployment, account } = require("../../db").models;
 const { userService } = require("../../services/UserService");
+const Number = require("../../lib/Number");
 
 async function create(req, res, next) {
   try {
-  
-
+    //Permission Check
+    const hasPermissions = await Permission.Has(Permission.USER_ADD, req);
+ 
     const data = req.body;
 
     let userData = {};
@@ -38,14 +40,17 @@ async function create(req, res, next) {
 
     const defaultTimeZone = await getSettingValue(USER_DEFAULT_TIME_ZONE, companyId);
 
-    const existingUserDetail = await userService.findOne({
-      where: {
-        mobile_number1: PhoneNumber.Get(data.mobileNumber), company_id: companyId
-      }
-    });
+    if (Number.isNotNull(data?.mobileNumber )){
 
-    if (existingUserDetail) {
-      return res.json(400, { message: "User with this mobile number already exists" });
+      const existingUserDetail = await userService.findOne({
+        where: {
+          mobile_number1: PhoneNumber.Get(data?.mobileNumber), company_id: companyId
+        }
+      });
+    
+      if (existingUserDetail) {
+        return res.json(400, { message: "User with this mobile number already exists" });
+      }
     }
 
     userData.company_id = companyId;
@@ -57,14 +62,17 @@ async function create(req, res, next) {
     userData.role = data?.role?.value;
     userData.email = data.email;
     userData.date_of_joining = data?.date_of_joining,
-      userData.mobile_number1 = data.mobileNumber && PhoneNumber.Get(data.mobileNumber);
+      userData.mobile_number1 = data.mobileNumber1 && PhoneNumber.Get(data.mobileNumber1);
 
     userData["password"] = md5Password(newPassword);
 
     if (defaultTimeZone) {
       userData.time_zone = defaultTimeZone;
+    }else{
+      if(data?.timeZone){
+        userData.time_zone = data?.timeZone;
+      }
     }
-
     let createData = await UserService.createUser(userData);
     
     if (createData && createData?.id) {
@@ -78,7 +86,7 @@ async function create(req, res, next) {
         name: data?.first_name,
         email: data?.email,
         status: Status.ACTIVE,
-        mobile: data.mobileNumber && PhoneNumber.Get(data?.mobileNumber),
+        mobile: data.mobileNumber1 && PhoneNumber.Get(data?.mobileNumber1),
         type: accountTypeIds[0],
         company_id: companyId,
       };

@@ -36,7 +36,8 @@ async function update(req, res, next) {
             ...(isKeyAvailable(data,"end_time") ? {end_time: data.end_time ? Date.GetGmtDate(data.end_time) :null}:{}),
             ...(isKeyAvailable(data,"checkin_allowed_from") ? {checkin_allowed_from: data.checkin_allowed_from ? Date.GetGmtDate(data.checkin_allowed_from) :null}:{}),
             ...(isKeyAvailable(data,"checkin_allowed_till") ? {checkin_allowed_till: data.checkin_allowed_till ? Date.GetGmtDate(data.checkin_allowed_till) :null}:{}),
-            ...(isKeyAvailable(data,"grace_period") ? {grace_period: Number.Get(data?.grace_period)}:{})
+            ...(isKeyAvailable(data,"grace_period") ? {grace_period: Number.Get(data?.grace_period)}:{}),
+            ...(isKeyAvailable(data,"cutoff_time") ? {cutoff_time: Number.Get(data?.cutoff_time)}:{}),
         };
 
         const save = await useDetail.update(shiftDetails);

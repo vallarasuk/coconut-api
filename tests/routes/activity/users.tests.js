@@ -44,6 +44,7 @@ describe("Activity - Users", () => {
 	});
 
 	it("should return Unauthorized Error when the user is not admin", (done) => {
+		req.isAdmin = req.isManager = false;
 
 		next = (err) => {
 			expect(err.statusCode).to.be.equal(401);

@@ -1176,7 +1176,7 @@ async function create(req, res, next) {
       weight: data.weight ? String.Get(data.weight) : null,
       weight_unit: data.weightUnit ? String.Get(data.weightUnit) : null,
       notes: data.notes ? String.Get(data.notes) : null,
-      status: data.status ? data.status : Product.STATUS_DRAFT,
+      status: data.status ? data.status : Product.STATUS_ACTIVE,
       size: data.size ? String.Get(data.size) : null,
       unit: data.unit ? String.Get(data.unit) : null,
       company_id: companyId,
@@ -1822,6 +1822,7 @@ const get = async (req, res, next) => {
     const productIndexDetails = await productIndex.findOne({
       where: { product_id: id },
     });
+    console.debug("productIndexDetails--------------->>>", productIndexDetails)
 
     if (!productDetails) {
       return res.json(BAD_REQUEST, { message: "Product id is required" });
@@ -1856,7 +1857,7 @@ const get = async (req, res, next) => {
     // Defining Featured media url
     let featured_media_url;
     // Getting the product image from product index table
-    featured_media_url = productIndexDetails?.featured_media_url;
+    featured_media_url = productIndexDetails && productIndexDetails?.featured_media_url;
     
     // formate object property
     // data.image = image ? getMediaUrl(id, image) : null;
@@ -1867,20 +1868,20 @@ const get = async (req, res, next) => {
     data.allow_online_sale = allow_online_sale == Product.ALLOW_ONLINE_SALE ? true : false;
     data.createdAt = DateTime.defaultDateFormat(createdAt);
     data.updatedAt = DateTime.defaultDateFormat(updatedAt);
-    data.brandName = productIndexDetails.brand_name;
-    data.categoryName = productIndexDetails.category_name;
+    data.brandName = productIndexDetails &&productIndexDetails.brand_name;
+    data.categoryName =productIndexDetails && productIndexDetails.category_name;
     data.taxableLabel = taxable ? Product.PRODUCT_TAXABLE_YES : Product.PRODUCT_TAXABLE_NO;
     data.sellOutOfStockLabel =
       sell_out_of_stock === 1 ? Product.PRODUCT_SELL_OUT_OF_STOCK_ALLOW : Product.PRODUCT_SELL_OUT_OF_STOCK_DENY;
-    data.profit_amount = productIndexDetails.profit_amount;
-    data.profit_percentage = productIndexDetails.profit_percentage;
+    data.profit_amount =productIndexDetails && productIndexDetails.profit_amount;
+    data.profit_percentage = productIndexDetails &&productIndexDetails.profit_percentage;
     if (store_id && productDetails.store) {
       data.storeName = productDetails.store.name;
     }
-    data.product_display_name = productIndexDetails?.product_display_name;
-    data.print_name = productIndexDetails.print_name;
-    data.sale_price = productIndexDetails?.sale_price ? productIndexDetails?.sale_price : "";
-    (data.mrp = productIndexDetails?.mrp ? productIndexDetails?.mrp : ""),
+    data.product_display_name = productIndexDetails &&productIndexDetails?.product_display_name;
+    data.print_name = productIndexDetails &&productIndexDetails.print_name;
+    data.sale_price = productIndexDetails &&productIndexDetails?.sale_price ? productIndexDetails?.sale_price : "";
+    (data.mrp = productIndexDetails &&productIndexDetails?.mrp ? productIndexDetails?.mrp : ""),
       (data.discount_percentage = Number.GetFloat(productIndexDetails && productIndexDetails.discount_percentage));
     data.margin_percentage = Number.GetFloat(productIndexDetails && productIndexDetails.margin_percentage);
     data.reward = productIndexDetails && productIndexDetails?.reward ? productIndexDetails?.reward : "";

@@ -8,8 +8,10 @@ const orderProductService = require("../../services/OrderProductService");
 
 
 async function replenishSearch(req, res, next) {
+  const hasPermission = await Permission.Has(Permission.ORDER_PRODUCT_VIEW, req);
 
-  
+ 
+
   try {
     await orderProductService.replenishSearch(req, res, next);
   } catch (err) {

@@ -77,6 +77,7 @@ module.exports = {
     //Whatsapp
     LOGIN_WHATSAPP_NOTIFICATION_NUMBER: "login_notication_whatsapp_mobile_number",
     WHATSAPP_ACCESS_TOKEN: "whatsapp_access_token",
+    WORDPRESS_ACCESS_TOKEN: "wordpress_access_token",
 
     USER_DEFAULT_TIME_ZONE: "user_default_time_zone",
 
@@ -84,6 +85,7 @@ module.exports = {
     REPORTED_TICKETS_MINIMUM_STORY_POINTS: "reported_tickets_minimum_story_points",
     VALIDATE_TICKET_MINIMUM_STORY_POINTS_ON_CHECKOUT: "validate_ticket_minimum_story_points_on_checkout",
     DEFAULT_REVIEWER : "default_reviewer",
+    ENABLE_SALARY_ADDITIONAL_HOURS:"enable_salary_additional_hours",
 
     PROJECT_SETTING_ALLOWED_USER : "project_setting_allowed_user",
     PROJECT_SETTING_ALLOWED_ROLES_FOR_STORY_POINT_CHANGE : "project_setting_allowed_roles_for_story_point_change",
@@ -121,6 +123,10 @@ module.exports = {
   REPLENISHMENT_MISSING_FINE_TYPE: "replenishment_missing_fine_type",
   FINE_ADD_FOR_REPLENISHMENT_MISSING:"fine_add_for_replenishment_missing",
   ALLOW_ADDITIONAL_LEAVE_ADD: "allow_additional_leave_add",
+
+  BONUS_ADD_FOR_LATE_CHECKOUT:"bonus_add_for_late_checkout",
+  USER_ALLOW_LEAVE:"user_allow_leave",
+
 
 
 
@@ -209,8 +215,9 @@ module.exports = {
 
 
 
-
-
+/* ✴---WordPress Access Token---✴ */
+WORDPRESS_ACCESS_TOKEN: "wordpress_access_token",
+CANDIDATE_PROFILE_SUBMIT_NOTIFICATION_EMAIL: "candidate_profile_submit_notification_email",
 
 
 

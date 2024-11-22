@@ -19,7 +19,7 @@ const DateTime = require("../../lib/dateTime");
 const dateTime = new DateTime();
 
 function list(req, res, next) {
-  
+ 
 
   const data = req.query;
   let page = 1;

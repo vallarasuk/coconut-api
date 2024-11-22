@@ -16,7 +16,7 @@ const DateTime = require("../lib/dateTime");
 const Number = require("../lib/Number");
 const Response = require("../helpers/Response");
 const ArrayList = require("../lib/ArrayList");
-const { getSettingValueByObject } = require("./SettingService");
+const { getSettingValueByObject, getSettingValue } = require("./SettingService");
 const Setting = require("../helpers/Setting");
 const ObjectName = require("../helpers/ObjectName");
 const Request = require("../lib/request");
@@ -49,32 +49,35 @@ class SalaryService {
         try {
           let whereCondition = "";
 
-          companyId ? (whereCondition += ` a."company_id" = ${companyId}`) : "";
-          user_id ? (whereCondition += ` AND a."user_id" = ${user_id}`) : "";
+          companyId ? (whereCondition += ` attendance."company_id" = ${companyId}`) : "";
+          user_id ? (whereCondition += ` AND attendance."user_id" = ${user_id}`) : "";
           startDate
-            ? (whereCondition += ` AND a."date" >= '${startDate}'`)
+            ? (whereCondition += ` AND attendance."date" >= '${startDate}'`)
             : "";
-          endDate ? (whereCondition += ` AND a."date" <= '${endDate}'`) : "";
-
+          endDate ? (whereCondition += ` AND attendance."date" <= '${endDate}'`) : "";
+          whereCondition += ` AND attendance."deleted_at" IS NULL`;
           let query = `
-        SELECT 
-          
-            at.name AS type_name, 
-            at.is_leave, 
-            at.is_working_day, 
-            COUNT(a.type) AS count, 
-            MAX(a.days_count) AS days_count,
-            MAX(a.type) AS type
-
-        FROM 
-            Attendance AS a
-        LEFT JOIN 
-            attendance_type AS at ON a.type = at.id
-        WHERE 
-            ${whereCondition}
-        GROUP BY 
-            at.id, at.name, at.is_leave, at.is_working_day;
-    `;
+          SELECT 
+              attendanceType.name AS type_name, 
+              attendanceType.is_leave, 
+              attendanceType.is_working_day,
+              attendanceType.days_count,
+              COUNT(attendance.type) AS count, 
+              attendance.type AS type
+      
+          FROM 
+              Attendance AS attendance
+          LEFT JOIN 
+              attendance_type AS attendanceType ON attendance.type = attendanceType.id
+          WHERE 
+              ${whereCondition}
+          GROUP BY 
+              attendanceType.name, 
+              attendanceType.is_leave, 
+              attendanceType.is_working_day,
+              attendanceType.days_count,
+              attendance.type;
+      `;
 
           // list
           const list = await db.connection.query(query, {
@@ -98,21 +101,27 @@ class SalaryService {
       let attendaceList = await getAttendanceData();
 
       if (attendaceList && attendaceList.length > 0) {
-        let totalAdditionalMinutes = await Attendance.sum("additional_hours", {
-          where: {
-            user_id: user_id,
-            date: {
-              [Op.and]: {
-                [Op.gte]: startDate,
-                [Op.lte]: endDate,
-              },
-            },
-            company_id: companyId,
-          },
-        });
 
-        // Additional Hours
-        let additional_hours = DateTime.HoursAndMinutes(totalAdditionalMinutes);
+        let additional_hours;
+        let totalAdditionalMinutes;
+        let allowAdditonalHour = await getSettingValue(Setting.ENABLE_SALARY_ADDITIONAL_HOURS,companyId)
+         if(allowAdditonalHour && allowAdditonalHour == "true"){
+          totalAdditionalMinutes = await Attendance.sum("additional_hours", {
+            where: {
+              user_id: user_id,
+              date: {
+                [Op.and]: {
+                  [Op.gte]: startDate,
+                  [Op.lte]: endDate,
+                },
+              },
+              company_id: companyId,
+            },
+          });
+  
+          // Additional Hours
+           additional_hours = DateTime.HoursAndMinutes(totalAdditionalMinutes);
+         }
         // Get Store list and count
         const userDetail = await UserModel.findOne({
           where: {
@@ -126,11 +135,21 @@ class SalaryService {
           Status.GROUP_COMPLETED,
           companyId
         );
-
+        let bonusCompleteStatus = await StatusService.getAllStatusByGroupId(
+          ObjectName.BONUS,
+          Status.GROUP_COMPLETED,
+          companyId
+        )
         let completeStatusIds =
           completeStatus && completeStatus.length > 0
             ? completeStatus?.map((value) => value.id)
             : [];
+
+            let bonusCompleteStatusIds =
+            bonusCompleteStatus && bonusCompleteStatus.length > 0
+              ? bonusCompleteStatus?.map((value) => value.id)
+              : [];
+  
 
         // Bonus Amount
         let bonusAmountValue = 0;
@@ -142,13 +161,13 @@ class SalaryService {
           },
         });
 
-        if (!ArrayList.isArray(bonusTypeList)) {
-          const tagIds = bonusTypeList.map((tag) => tag.dataValues.id);
+        if (ArrayList.isArray(bonusTypeList)) {
+          const tagIds = bonusTypeList.map((tag) => tag.id);
           let bonusAmount = await FineBonus.sum("amount", {
             where: {
               user: Number.Get(user_id),
               company_id: companyId,
-              status: { [Op.in]: completeStatusIds },
+              status: { [Op.in]: bonusCompleteStatusIds },
               date: {
                 [Op.and]: {
                   [Op.gte]: startDate,
@@ -171,8 +190,8 @@ class SalaryService {
           },
         });
 
-        if (!ArrayList.isArray(fineTypeList)) {
-          const tagIds = fineTypeList.map((tag) => tag.dataValues.id);
+        if (ArrayList.isArray(fineTypeList)) {
+          const tagIds = fineTypeList.map((tag) => tag.id);
 
           let fineAmount = await FineBonus.sum("amount", {
             where: {
@@ -188,6 +207,7 @@ class SalaryService {
               type: tagIds,
             },
           });
+
           fineAmountValue = Number.GetFloat(fineAmount);
         }
 
@@ -249,8 +269,6 @@ class SalaryService {
               count: leaveDays[i].count,
               days_count: leaveDays[i].days_count,
               type: Type.LEAVE_TEXT,
-
-
             });
           }
         }
@@ -264,7 +282,7 @@ class SalaryService {
           for (let i = 0; i < workedDay.length; i++) {
             let salary =
               workedDay[i].count *
-              Number.GetFloat(salaryPerDay * (workedDay[i].days_count - 1));
+              Number.GetFloat(salaryPerDay * (workedDay[i].days_count));
             if (salary && Number.GetFloat(salary) > 0) {
               workedDaysData.push({
                 amount: salary,
@@ -272,7 +290,6 @@ class SalaryService {
                 count: workedDay[i].count,
                 days_count: workedDay[i].days_count,
                 type: Type.WORKING_DAY_TEXT,
-
               });
             }
           }
@@ -280,18 +297,22 @@ class SalaryService {
 
         let mergedData = [...leaveDaysData, ...workedDaysData];
 
-        const attendanceCount= mergedData && mergedData.length>0 ? JSON.stringify(mergedData):"";
+        const attendanceCount =
+          mergedData && mergedData.length > 0 ? JSON.stringify(mergedData) : "";
         // total Leave Salary
-        const totalLeaveSalary = mergedData.reduce(
-          (sum, item) => sum + Number.GetFloat(item.leaveSalary || 0),
+        const totalLeaveSalary = leaveDaysData
+        .filter(item => item.days_count > 1) // Filter items with days_count > 1
+        .reduce((sum, item) => sum + Number.GetFloat(item.amount || 0), 0); // Sum the filtered items
+        const totalWorkedDays = workedDaysData.reduce(
+          (sum, item) => sum + Number.GetFloat(item.count || 0),
           0
         );
 
         // total Worked Salary
-        const totalWorkedSalary = mergedData.reduce(
-          (sum, item) => sum + Number.GetFloat(item.workedSalary || 0),
+        const totalWorkedSalary = workedDaysData.reduce(
+          (sum, item) => sum + Number.GetFloat(item.amount || 0),
           0
-        );
+        ); 
 
         // pf
         let pf = Number.GetFloat(data.provident_fund);
@@ -325,14 +346,13 @@ class SalaryService {
 
         // Net Salary
         let netSalaryAmount =
-          monthlySalary +
-          Number.truncateDecimal(totalWorkedSalary, 2) +
-          Number.GetFloat(bonusAmountValue) +
-          Number.GetFloat(data.other_allowance) +
-          Number.GetFloat(additionalHourAmount) -
-          (Number.truncateDecimal(totalLeaveSalary) +
-            Number.GetFloat(data.other_deductions) +
-            Number.GetFloat(fineAmountValue));
+        Number.truncateDecimal(totalWorkedSalary) +
+        Number.GetFloat(bonusAmountValue) +
+        Number.GetFloat(data.other_allowance) +
+        Number.GetFloat(additionalHourAmount) -
+        (Number.truncateDecimal(totalLeaveSalary) +
+          Number.GetFloat(data.other_deductions) +
+          Number.GetFloat(fineAmountValue));
 
         // Hra
         let hra = netSalaryAmount
@@ -369,6 +389,7 @@ class SalaryService {
           startDate: startDate || "",
           endDate: endDate || "",
           totalWorkingDays: totalWorkingDays,
+          workedDays:totalWorkedDays,
           basic: basic,
           pf: pf,
           pt: pt,
@@ -434,30 +455,31 @@ class SalaryService {
           reCalcuatedArray[i].data && reCalcuatedArray[i].data?.dataValues;
         updateCalculatedData.user_id = value.user ? value.user : "";
         updateCalculatedData.working_days = value.totalWorkingDays;
-        updateCalculatedData.attendance_count = value.attendanceCount;
-        updateCalculatedData.basic = Number.roundOff(value.basic);
-        updateCalculatedData.hra = Number.roundOff(value.hra);
-        updateCalculatedData.special_allowance = Number.roundOff(
+        updateCalculatedData.attendance = value.attendanceCount;
+        updateCalculatedData.worked_days = value.workedDays;
+        updateCalculatedData.basic = Number.GetFloat(value.basic);
+        updateCalculatedData.hra = Number.GetFloat(value.hra);
+        updateCalculatedData.special_allowance = Number.GetFloat(
           value.special_allowance
         );
         updateCalculatedData.net_salary = Number.roundOff(value.net_salary);
-        updateCalculatedData.monthly_salary = Number.roundOff(
+        updateCalculatedData.monthly_salary = Number.GetFloat(
           value.monthlySalary
         );
 
-        updateCalculatedData.bonus = Number.roundOff(value.bonus);
-        updateCalculatedData.salary_per_day = Number.roundOff(
+        updateCalculatedData.bonus = Number.GetFloat(value.bonus);
+        updateCalculatedData.salary_per_day = Number.GetFloat(
           value.salaryPerDay
         );
-        updateCalculatedData.fine = Number.roundOff(value.fine);
-        updateCalculatedData.additional_hours = Number.roundOff(
+        updateCalculatedData.fine = Number.GetFloat(value.fine);
+        updateCalculatedData.additional_hours = Number.GetFloat(
           value.totalMinutes
         );
-        updateCalculatedData.additional_hours_salary = Number.roundOff(
+        updateCalculatedData.additional_hours_salary = Number.GetFloat(
           value.additionalHourAmount
         );
 
-        updateCalculatedData.other_allowance = Number.roundOff(
+        updateCalculatedData.other_allowance = Number.GetFloat(
           value.other_allowance
         );
 
@@ -624,14 +646,15 @@ class SalaryService {
         where: { id, company_id },
       });
       if (!salaryDetail) {
-        return res.json(BAD_REQUEST, { message: "Salary not found" });
+        return res.json(Response.BAD_REQUEST, { message: "Salary not found" });
       }
 
       await salaryDetail.destroy();
 
       res.json(Response.DELETE_SUCCESS, { message: "Salary deleted" });
     } catch (err) {
-      console.log(err);    }
+      console.log(err);
+    }
   }
 
   static create = async (data, companyId) => {
@@ -657,7 +680,6 @@ class SalaryService {
         where: { company_id: companyId },
         attributes: ["id", "name", "last_name"],
         order: [["created_at", "ASC"]],
-        limit: 20,
       });
 
       let SalaryData = new Object();
@@ -707,31 +729,32 @@ class SalaryService {
           : "";
         createCalculatedData.working_days =
           reCalcuatedArray[i].totalWorkingDays;
-        createCalculatedData.basic = Number.roundOff(reCalcuatedArray[i].basic);
-        createCalculatedData.hra = Number.roundOff(reCalcuatedArray[i].hra);
-        createCalculatedData.attendance_count = reCalcuatedArray[i].attendanceCount;
-        createCalculatedData.special_allowance = Number.roundOff(
+        createCalculatedData.basic = Number.GetFloat(reCalcuatedArray[i].basic);
+        createCalculatedData.hra = Number.GetFloat(reCalcuatedArray[i].hra);
+        createCalculatedData.attendance = reCalcuatedArray[i].attendanceCount;
+        createCalculatedData.worked_days = reCalcuatedArray[i].workedDays;
+        createCalculatedData.special_allowance = Number.GetFloat(
           reCalcuatedArray[i].special_allowance
         );
         createCalculatedData.net_salary = Number.roundOff(
           reCalcuatedArray[i].net_salary
         );
-        createCalculatedData.monthly_salary = Number.roundOff(
+        createCalculatedData.monthly_salary = Number.GetFloat(
           reCalcuatedArray[i].monthlySalary
         );
-        createCalculatedData.bonus = Number.roundOff(reCalcuatedArray[i].bonus);
-        createCalculatedData.salary_per_day = Number.roundOff(
+        createCalculatedData.bonus = Number.GetFloat(reCalcuatedArray[i].bonus);
+        createCalculatedData.salary_per_day = Number.GetFloat(
           reCalcuatedArray[i].salaryPerDay
         );
 
-        createCalculatedData.fine = Number.roundOff(reCalcuatedArray[i].fine);
+        createCalculatedData.fine = Number.GetFloat(reCalcuatedArray[i].fine);
         createCalculatedData.status = status && status?.id;
         createCalculatedData.company_id = companyId;
         createCalculatedData.salary_number = salaryNumber;
-        createCalculatedData.additional_hours = Number.roundOff(
+        createCalculatedData.additional_hours = Number.GetFloat(
           reCalcuatedArray[i].totalMinutes
         );
-        createCalculatedData.additional_hours_salary = Number.roundOff(
+        createCalculatedData.additional_hours_salary = Number.GetFloat(
           reCalcuatedArray[i].additionalHourAmount
         );
         createCalculatedData.month = Number.Get(data?.month);
@@ -906,7 +929,7 @@ class SalaryService {
 
       let where = {};
 
-      if(user){
+      if (user) {
         where.user_id = user;
       }
 

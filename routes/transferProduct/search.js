@@ -43,6 +43,18 @@ const search = async (req, res) => {
           return res.json(Response.BAD_REQUEST, { message: "Company Not Found" });
         }
       
+        let rolePermission = Request.getRolePermission(req);
+      
+        // order add permission check
+        const hasPermission = await Permission.GetValueByName(Permission.TRANSFER_VIEW, rolePermission);
+      
+
+        // manage other permission check
+        const manageOthers = await Permission.GetValueByName(
+          Permission.TRANSFER_MANAGE_OTHERS,
+          rolePermission
+        );
+      
 
         // Validate if page is not a number
         page = page ? parseInt(page, 10) : 1;

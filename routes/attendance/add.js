@@ -35,8 +35,9 @@ const ArrayList = require("../../lib/ArrayList");
  * orderProduct create route
  */
 async function add(req, res, next) {
+  const hasPermission = await Permission.Has(Permission.ATTENDANCE_ADD, req);
 
-  
+
 
   const data = req.body;
   const companyId = Request.GetCompanyId(req);

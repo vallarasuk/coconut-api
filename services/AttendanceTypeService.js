@@ -26,7 +26,8 @@ class AttendanceTypeService {
       is_additional_shift: params?.is_additional_shift,
       is_additional_day: params?.is_additional_day,
       is_absent: params?.is_absent,
-      allowed_days: params?.days
+      allowed_days: params?.days,
+      category : Number.Get(params?.category)
     };
     let response = await attendanceType.create(createData);
     return response && response;
@@ -126,7 +127,8 @@ class AttendanceTypeService {
               is_additional_shift,
               is_additional_day,
               is_absent,
-              allowed_days
+              allowed_days,
+              category
             } = attendanceTypeData[i];
 
             let typeValue = typeOptions.find((data)=>data?.value == type)
@@ -147,11 +149,12 @@ class AttendanceTypeService {
               is_additional_shift,
               is_additional_day,
               is_absent,
-              allowed_days
+              allowed_days,
+              category
             });
         }
     }
-
+      
    
    return {
       totalCount: attendanceTypeList.count,
@@ -169,6 +172,7 @@ class AttendanceTypeService {
   }
 
   static async update(params){
+    
     let createData = {
         name: params?.name ? params?.name :"",
         type: Number.Get(params?.type),
@@ -183,7 +187,8 @@ class AttendanceTypeService {
         is_additional_shift: params?.is_additional_shift,
         is_additional_day: params?.is_additional_day,
         is_absent: params?.is_absent,
-        allowed_days: params?.days
+        allowed_days: params?.days,
+        category : Number.Get(params?.category)
       };
   
       let response = await attendanceType.update(createData,{
@@ -350,150 +355,162 @@ class AttendanceTypeService {
 
   static async leaveType(params) {
 
-    try
+    try 
     {
-    let { company_id, is_leave, user_id } = params;
+      let { company_id, is_leave, user_id, timeZone } = params;
 
+    
     const where = {};
-
+    
     where.company_id = company_id;
-
+    
     if(Number.isNotNull(is_leave)){
       where.is_leave= true
     }
+    
+    if(DateTime.isValidDate(params?.date)){
+      let day = DateTime.getDayOfWeek(params?.date)
+      where.allowed_days= {
+        [Op.iLike]: `%${day}%`,
+      }
+    }
 
     const query = {
-      order: [["cutoff_time", "DESC"]],
+      order: [["cutoff_time", "DESC","NULLS LAST"],["days_count", "ASC"]],
       where,
     };
     
     let endDate = DateTime.GetCurrentDateTime(new Date())
-
     let hourData = DateTime.getHours(endDate,params?.date)
+    let { startDate: startDateValue, endDate: endDateValue } = DateTime.getCustomDateTime(5, timeZone)
 
-    const useDetail = await UserEmployment.findOne({
-      where: { user_id: user_id, company_id: company_id },
-    });
+      const useDetail = await UserEmployment.findOne({
+        where: { user_id: user_id, company_id: company_id },
+      });
 
-    const attendanceTypeList = await attendanceType.findAndCountAll(query);
+      const attendanceTypeList = await attendanceType.findAndCountAll(query);
 
-    const data = [];
+      const data = [];
 
-    const attendanceTypeData = attendanceTypeList && attendanceTypeList.rows;
+      const attendanceTypeData = attendanceTypeList && attendanceTypeList.rows;
 
-    if (attendanceTypeData && attendanceTypeData.length > 0  && params?.date !=="" ) {
-      for (let i = 0; i < attendanceTypeData.length; i++) {
-        const { name, id, status, type, days_count,cutoff_time,maximum_leave_allowed,   is_leave: isLeave,
-          is_working_day,
-          is_additional_leave,
-          is_additional_shift,
-          is_additional_day,
-          is_absent } = attendanceTypeData[i];
-
-        let warningMessage=""
-
-        let where={}
-
-        if(params?.date){
-          where.date = params?.date
-        }
-        
-        where.company_id = company_id
-
-        if(id){
-          where.type = id
-        }
-
-        where.login= { [Op.eq]: null }
-
-        const totalCount = await Attendance.count({
-          where: where,
-        });
-
-        let isEligible=true
-        
-        if(Number.GetFloat(hourData) <= Number.GetFloat(cutoff_time)){
-          warningMessage  ="Not Allowed";
-          isEligible = false
-        }
-        if(Number.Get(totalCount) >= Number.Get(maximum_leave_allowed)){
-          warningMessage = "Not Eligible";
-          isEligible = false
-        }
-
-        let typeValue = typeOptions.find((data) => data?.value == type);
-        let statusValue = statusOptions.find((data) => data?.value == status);
-
-        if (cutoff_time > 0){
-          data.push({
-            name,
-            label: name,
-            id,
-           value:id,
-            status: statusValue,
-            type: typeValue,
-            days_count,
-            isEnabled: isEligible,
-            warningMessage: warningMessage,
-            description:
-              days_count > 0
-                ? `${days_count} days salary ${Currency.calculateDailySalary(useDetail?.salary,30) * days_count} will be deducated`
-                : "",
-            leaveTypeNote:
-              cutoff_time > 0
-                ? `Leave should be applied before ${cutoff_time} hours`
-                : "",
-            maximum_leave_allowed: maximum_leave_allowed,
-            is_leave: isLeave,
+      if (attendanceTypeData && attendanceTypeData.length > 0  && params?.date !=="" ) {
+        for (let i = 0; i < attendanceTypeData.length; i++) {
+          const { name, id, status, type, days_count,cutoff_time,maximum_leave_allowed,   is_leave: isLeave,
             is_working_day,
             is_additional_leave,
             is_additional_shift,
             is_additional_day,
-            is_absent,
-            deductedSalary: (Currency.calculateDailySalary(useDetail?.salary,30) * days_count)
+            is_absent } = attendanceTypeData[i];
+
+          let warningMessage=""
+
+          let where={}
+
+          where.date = {
+            [Op.and]: {
+              [Op.gte]: startDateValue,
+              [Op.lte]: endDateValue,
+            },
+          };
+
+          where.company_id = company_id
+
+          if(id){
+            where.type = id
+          }
+
+          where.login= { [Op.eq]: null }
+
+          const totalCount = await Attendance.count({
+            where: where,
           });
-        }else{
-          data.push({
-            name,
-            label: name,
-            id,
-           value:id,
-            status: statusValue,
-            type: typeValue,
-            days_count,
-            isEnabled: true,
-            warningMessage: warningMessage,
-            description:"",
-            leaveTypeNote:"",
-            maximum_leave_allowed: maximum_leave_allowed,
-            is_leave: isLeave,
-            is_working_day,
-            is_additional_leave,
-            is_additional_shift,
-            is_additional_day,
-            is_absent,
-            deductedSalary: (Currency.calculateDailySalary(useDetail?.salary,30) * days_count),
-            description:
-            days_count > 0
-              ? `${days_count} days salary (${Currency.IndianFormat(Currency.calculateDailySalary(useDetail?.salary,30) * days_count)}) will be deducated`
-              : "",
-          leaveTypeNote:
-            cutoff_time > 0
-              ? `Leave should be applied before ${cutoff_time} hours`
-              : "",
-          });
+
+          let isEligible=true
+          if(cutoff_time && Number.GetFloat(hourData) <= Number.GetFloat(cutoff_time)){
+            warningMessage  ="Not Allowed";
+            isEligible = false
+          }
+          if(maximum_leave_allowed && Number.Get(totalCount) >= Number.Get(maximum_leave_allowed)){
+            warningMessage = "Not Eligible";
+            isEligible = false
+          }
+
+          let typeValue = typeOptions.find((data) => data?.value == type);
+          let statusValue = statusOptions.find((data) => data?.value == status);
+
+          if (cutoff_time > 0 || maximum_leave_allowed > 0){
+            data.push({
+              name,
+              label: name,
+              id,
+              value:id,
+              status: statusValue,
+              type: typeValue,
+              days_count,
+              isEnabled: isEligible,
+              warningMessage: warningMessage,
+              formattedSalary: Currency.GetFormatted(Currency.calculateDailySalary(useDetail?.salary, 30) * days_count),
+              description:
+                days_count > 0
+                  ? `${days_count} days salary ${Currency.calculateDailySalary(useDetail?.salary,30) * days_count} will be deducated`
+                  : "",
+              leaveTypeNote:
+                cutoff_time > 0
+                  ? `Leave should be applied before ${cutoff_time} hours`
+                  : "",
+              maximum_leave_allowed: maximum_leave_allowed,
+              is_leave: isLeave,
+              is_working_day,
+              is_additional_leave,
+              is_additional_shift,
+              is_additional_day,
+              is_absent,
+              deductedSalary: (Currency.calculateDailySalary(useDetail?.salary,30) * days_count)
+            });
+          }else{
+            data.push({
+              name,
+              label: name,
+              id,
+              value:id,
+              status: statusValue,
+              type: typeValue,
+              days_count,
+              isEnabled: true,
+              warningMessage: warningMessage,
+              description:"",
+              leaveTypeNote:"",
+              maximum_leave_allowed: maximum_leave_allowed,
+              is_leave: isLeave,
+              is_working_day,
+              is_additional_leave,
+              is_additional_shift,
+              is_additional_day,
+              is_absent,
+              formattedSalary: Currency.GetFormatted(Currency.calculateDailySalary(useDetail?.salary, 30) * days_count),
+              deductedSalary: (Currency.calculateDailySalary(useDetail?.salary,30) * days_count),
+              description:
+                days_count > 0
+                  ? `${days_count} days salary (${Currency.IndianFormat(Currency.calculateDailySalary(useDetail?.salary,30) * days_count)}) will be deducated`
+                  : "",
+              leaveTypeNote:
+                cutoff_time > 0
+                  ? `Leave should be applied before ${cutoff_time} hours`
+                  : "",
+            });
+          }
         }
       }
-    }
-    
-    return {
-      data
-    }
-  }catch(err){
-    console.log(err);
-  }
-  }
 
+      return {
+        data
+      }
+    }catch(err){
+      console.log(err);
+    }
+  }
+ 
   static async getAttendanceTypeId (where={}){
     let attendanceTypeList = await attendanceType.findAll({
       order:[["id","DESC"]],
@@ -503,7 +520,24 @@ class AttendanceTypeService {
     return returnValue;
   }
 
- 
+  static async getDaysCountById(params) {
+    let { id, company_id } = params;
+    let where = {}
+
+    where.company_id = company_id;
+
+    if (Number.isNotNull(id)) {
+      where.id = id;
+    }
+
+    let attendanceTypeDetail = await attendanceType.findOne({
+      where: where
+    });
+
+    return attendanceTypeDetail && attendanceTypeDetail?.days_count;
+  }
+
+
 }
 
 module.exports = AttendanceTypeService;

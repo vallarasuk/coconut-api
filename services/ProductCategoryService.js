@@ -85,8 +85,8 @@ module.exports = {
   },
   //search product list
   async search(req, res, next) {
+    const hasPermission = await Permission.Has(Permission.BRAND_VIEW, req);
 
- 
     let { page, pageSize, search, sort, sortDir, pagination, categoryName, categoryId } = req.query;
 
 

@@ -6,7 +6,7 @@ const { AccountCategory } = require("../../db").models;
 function del(req, res, next) {
   const accountCategoryId = req.params.id;
 
- 
+
 
   AccountCategory.findOne({
     attributes: ["id"],

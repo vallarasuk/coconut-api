@@ -84,6 +84,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATE,
             allowNull: true,
         },
+        last_return_date: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
         discrepancy_quantity: {
             type: DataTypes.INTEGER,
             allowNull: true,

@@ -12,8 +12,9 @@ const Permission = require('../helpers/Permission');
 const list = async (req, res, next) => {
   try {
 
+    const hasPermission = await Permission.Has(Permission.STORE_PRODUCT_NO_STOCK_REPORT_VIEW, req);
 
-    
+   
     const params = req.query;
 
     let companyId = req.user && req.user.company_id;

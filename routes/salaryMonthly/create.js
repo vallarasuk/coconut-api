@@ -7,6 +7,7 @@ const validate = require("./validate");
 const { SalaryMonthly } = require("../../db").models;
 
 function create(req, res, next) {
+ 
 
   const data = req.body;
 

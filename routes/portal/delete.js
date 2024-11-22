@@ -5,6 +5,8 @@ const { hasPermission } = require("../../services/UserRolePermissionService");
 
 async function deletePortal(req, res, next) {
   try {
+    //Permission Check
+    const hasPermissions = await hasPermission(Permission.PORTAL_DELETE, req);
 
 
     const id = parseInt(req.params.id, 10);

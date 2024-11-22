@@ -13,6 +13,8 @@ const Boolean = require("../lib/Boolean");
 
 
 const create = async (req, res, next) => {
+  const hasPermission = await Permission.Has(Permission.PAYMENT_ACCOUNT_ADD, req);
+
 
   
   let object_id = "";
@@ -60,14 +62,12 @@ const create = async (req, res, next) => {
 };
 
 const del = async (req, res, next) => {
+    const hasPermission = await Permission.Has(Permission.PAYMENT_ACCOUNT_DELETE, req);
 
-   
-    
+
     const id = req.params.id;
     const company_id = Request.GetCompanyId(req);
-    if (!validator.isInteger(id)) {
-        return next(new errors.BadRequestError("Invalid Account id"));
-    }
+  
 
     PaymentAccount.findOne({
         attributes: [
@@ -143,8 +143,9 @@ const get = async (req, res, next) => {
 }
 
 const update = async (req, res, next) => {
+  const hasPermission = await Permission.Has(Permission.PAYMENT_ACCOUNT_EDIT, req);
 
-  
+
 
   let { id } = req.params;
 
@@ -195,8 +196,9 @@ const update = async (req, res, next) => {
 }
 
 const search = async (req, res, next) => {
+    const hasPermission = await Permission.Has(Permission.PAYMENT_ACCOUNT_VIEW, req);
 
-  
+   
     try {
         let { page, pageSize, search, sort, sortDir,primary,pagination } = req.query;
         const company_id = Request.GetCompanyId(req);

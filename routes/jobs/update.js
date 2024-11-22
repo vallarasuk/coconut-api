@@ -8,6 +8,11 @@ function update(req, res, next) {
   const data = req.body;
   const id = req.params.id;
   let company_id = Request.GetCompanyId(req);
+  let checkBoxValue = data && data?.checkBoxValue && data?.checkBoxValue?.split(",");
+  let fields = null;
+  if (Object.keys(data).includes("checkBoxValue")) {
+    fields = checkBoxValue && checkBoxValue.join(",")
+  }
   Jobs.update(
     {
       job_title: data.job_title,
@@ -25,8 +30,8 @@ function update(req, res, next) {
       mandatory_skills: data.mandatory_skills,
       course_name: data.course_name,
       project_name: data.project_name,
-      minimum_experience: Number.Get(data.minimum_experience) ,
-      maximum_experience: Number.Get(data.maximum_experience) ,
+      minimum_experience: Number.Get(data.minimum_experience),
+      maximum_experience: Number.Get(data.maximum_experience),
       maximum_salary: data.maximum_salary || null,
       show_current_salary: data.show_current_salary,
       show_expected_salary: data.show_expected_salary,
@@ -38,8 +43,9 @@ function update(req, res, next) {
       show_home_town_address: data.show_home_town_address,
       show_employment: data.show_employment,
       show_vaccine_status: data.show_vaccine_status,
+      fields: fields
     },
-    { where: { id,company_id } }
+    { where: { id, company_id } }
   )
     .then(() => {
       res.json({

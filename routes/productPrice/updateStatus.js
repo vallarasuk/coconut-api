@@ -13,8 +13,8 @@ const StatusService = require('../../services/StatusService');
  */
 async function updateStatus(req, res, next) {
 
+    const hasPermission = await Permission.Has(Permission.PRODUCT_EDIT, req);
 
-   
     let response =  await ProductPriceService.updateStatus(req,res,next)
     if (response && response.statusCode == Response.OK) {
         await productService.reindex(response && response?.product_id, req.user.company_id);

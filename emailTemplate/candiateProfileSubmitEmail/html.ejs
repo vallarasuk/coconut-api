@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        th {
+            background-color:#20478c;
+            color: white;
+            text-align: center;
+            padding: 20px; 
+            font-size: 22px; 
+            border-right: 1px solid #ddd;
+        }
+
+        td {
+            padding: 30px; 
+            font-size: 25px; 
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+            min-width: 300px;
+        }
+
+        .profile {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .applicant-info {
+            font-size: 20px; 
+            color: #333;
+        }
+
+        .tableClass tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .tableClass tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .tableData {
+            padding: 30px; 
+            text-align: left;
+            font-size: 25px; 
+            color: #333;
+        }
+
+        .tableData-title {
+            font-weight: bold;
+            color: #555;
+        }
+
+        @media print {
+            body {
+                font-size: 16px;
+            }
+
+            td, th {
+                font-size: 16px;
+            }
+
+            th {
+                background-color: #333 !important;
+                color: white !important;
+            }
+
+            td {
+                font-size: 16px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <table class="tableClass">
+        <thead>
+            <tr>
+                <th colspan="2">Job Application: <%= position %></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <img src="<%= image_url %>" class="profile" />
+                    <a href="<%= file_url %>" target="_blank" style="font-size: 20px; color: #20478c; text-decoration: none;">
+                        View Resume
+                    </a>
+                </td>
+                <td class="tableData">
+                    <%= first_name %> <%= last_name %> (<%= age %> Years)<br>
+                    <%= gender %> - <%= marital_status %> 
+                </td>
+            </tr>
+            <tr>
+                <td class="tableData tableData-title">Position</td>
+                <td class="tableData"><%= position %></td>
+            </tr>
+            <tr>
+                <td class="tableData tableData-title">Phone</td>
+                <td class="tableData"><%= phone %></td>
+            </tr>
+            <tr>
+                <td class="tableData tableData-title">Email</td>
+                <td class="tableData"><%= email %></td>
+            </tr>
+            <tr>
+                <td class="tableData tableData-title">Qualification</td>
+                <td class="tableData"><%= qualification %></td>
+            </tr>
+            <tr>
+                <td class="tableData tableData-title">Department</td>
+                <td class="tableData"><%= department %></td>
+            </tr>
+            <tr>
+                <td class="tableData tableData-title">Year Of Passing</td>
+                <td class="tableData"><%= year_of_passing %></td>
+            </tr>
+            <tr>
+                <td class="tableData tableData-title">Staying With</td>
+                <td class="tableData"><%= staying_with %></td>
+            </tr>
+            <tr>
+                <td class="tableData tableData-title">Expected Salary</td>
+                <td class="tableData"><%= expected_salary %></td>
+            </tr>
+            <tr>
+                <td class="tableData tableData-title">Current City</td>
+                <td class="tableData"><%= current_city %></td>
+            </tr>
+            <tr>
+                <td class="tableData tableData-title">Current State</td>
+                <td class="tableData"><%= current_state %></td>
+            </tr>
+            <tr>
+                <td class="tableData tableData-title">Permanent City</td>
+                <td class="tableData"><%= permanent_city %></td>
+            </tr>
+            <tr>
+                <td class="tableData tableData-title">Permanent State</td>
+                <td class="tableData"><%= permanent_state %></td>
+            </tr>
+            <tr>
+                <td class="tableData tableData-title">Message</td>
+                <td class="tableData"><%= message %></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+
+</html>

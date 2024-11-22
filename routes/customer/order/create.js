@@ -23,7 +23,7 @@ const OrderTypeService = require("../../../services/OrderTypeService");
 
 async function create(req, res, next) {
   try {
-
+    const hasPermission = await Permission.Has(Permission.ORDER_ADD, req);
 
     const body = req.body;
 

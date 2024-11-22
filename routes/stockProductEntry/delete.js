@@ -16,7 +16,10 @@ const del = async (req, res) => {
     const { id } = req.params;
 
     try {
+        //validate permission exiist or not
+        const hasPermission = await Permission.GetValueByName(Permission.STOCK_PRODUCT_ENTRY_DELETE, req.role_permission);
  
+
 
         //get stock product entry Id
 

@@ -9,8 +9,7 @@ const Response = require("../../helpers/Response");
  */
  async function update (req, res, next){
     const hasPermission = await Permission.Has(Permission.ACCOUNT_EDIT, req);
- 
-   
+
     try{
         
         AccountService.update(req, res,next)

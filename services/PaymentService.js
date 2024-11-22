@@ -39,7 +39,8 @@ class paymentService {
   // Create a new paymentService
   static async create(req, res) {
     try {
-   
+      const hasPermission = await Permission.Has(Permission.PAYMENT_ADD, req);
+
       let data = req.body;
       const companyId = Request.GetCompanyId(req);
       let totalBillNetAmount;
@@ -171,8 +172,11 @@ class paymentService {
 
   static async del(req, res) {
     try {
-    
-     
+      const hasPermission = await Permission.Has(
+        Permission.PAYMENT_DELETE,
+        req
+      );
+
       const id = req.params.id;
       const company_id = Request.GetCompanyId(req);
 
@@ -255,7 +259,8 @@ class paymentService {
     const { id } = req.params;
     let roleId = Request.getUserRole(req);
     try {
-     
+      const hasPermission = await Permission.Has(Permission.PAYMENT_EDIT, req);
+    
       const companyId = Request.GetCompanyId(req);
       if (!id) {
         return res.json(BAD_REQUEST, { message: 'Payment id is required' });

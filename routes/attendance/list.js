@@ -47,7 +47,8 @@ async function list(req, res, next) {
     nonProductiveCost: "Attendance.non_productive_cost",
     typeName: "FIELD(type, 4, 2, 5, 3, 1)",
     created_at: "Attendance.created_at",
-    location:"location"
+    location: "location",
+    type: "type"
   };
   const sort = data.sort || "date";
   if (!Object.keys(sortableFields).includes(sort)) {
@@ -71,14 +72,14 @@ async function list(req, res, next) {
   const timeZone = Request.getTimeZone(req);
 
   const attendanceDate = data?.selectedDate || data?.date
-  let date = DateTime.getCustomDateTime(attendanceDate,timeZone)
-      
+  let date = DateTime.getCustomDateTime(attendanceDate, timeZone)
+
   let FilteredDate
-  if(data?.monthYear){
-    FilteredDate =  DateTime.getCustomMonthStartEndDateTime(data?.monthYear,timeZone)
+  if (data?.monthYear) {
+    FilteredDate = DateTime.getCustomMonthStartEndDateTime(data?.monthYear, timeZone)
   }
 
-  
+
   const attendanceWhereCondition = {};
 
   const userWhere = {};
@@ -100,13 +101,13 @@ async function list(req, res, next) {
   if (role) {
     userWhere.role = role;
   }
-  
+
   const user = data.user;
   if (hasPermission) {
-  if (user) {
-    attendanceWhereCondition.user_id = Number.Get(user);
+    if (user) {
+      attendanceWhereCondition.user_id = Number.Get(user);
+    }
   }
-}
 
   const location = data.location;
   if (location) {
@@ -132,7 +133,7 @@ async function list(req, res, next) {
   if (data.date) {
     attendanceWhereCondition.date = data.date;
   }
-  if(data?.monthYear && FilteredDate){
+  if (data?.monthYear && FilteredDate) {
     attendanceWhereCondition.date = {
       [Op.and]: {
         [Op.gte]: FilteredDate?.startDate,
@@ -141,15 +142,15 @@ async function list(req, res, next) {
     };
   }
 
-  if(attendanceDate && date){
+  if (attendanceDate && date) {
     attendanceWhereCondition.date = {
       [Op.and]: {
         [Op.gte]: date?.startDate,
         [Op.lte]: date?.endDate,
       },
     };
-    
-   }
+
+  }
   const endDate = data.endDate;
   const startDate = data.startDate;
   if (startDate && !endDate) {
@@ -205,9 +206,9 @@ async function list(req, res, next) {
     order.push([{ model: Location, as: "location" }, "name", sortDir]);
   } else if (sort === "login") {
     order.push([fn("TO_CHAR", col(`"Attendance.${sort}"`), "HH24:MI:SS"), sortDir]);
-  } else if(sort === "logout"){
+  } else if (sort === "logout") {
     order.push([fn("TO_CHAR", col(`"Attendance.${sort}"`), "HH24:MI:SS"), sortDir]);
-  }else {
+  } else {
     order.push([[sort, sortDir]]);
   }
   const query = {
@@ -240,6 +241,7 @@ async function list(req, res, next) {
       "approve_late_check_in",
       "check_in_media_id",
       "days_count",
+      'created_at',
       "company_id"],
 
     include: [
@@ -275,6 +277,7 @@ async function list(req, res, next) {
     order,
     where: attendanceWhereCondition,
   };
+
   if (validator.isEmpty(pagination)) {
     pagination = true;
   }
@@ -285,6 +288,7 @@ async function list(req, res, next) {
       query.offset = (page - 1) * pageSize;
     }
   }
+
   Attendance.findAndCountAll(query)
     .then(async (attendance) => {
       const count = attendance.count;
@@ -296,14 +300,14 @@ async function list(req, res, next) {
 
       if (count > 0) {
 
-        
+
         let attendanceData = attendance && attendance.rows;
 
         if (attendanceData && attendanceData.length > 0) {
 
           for (let i = 0; i < attendanceData.length; i++) {
 
-            const { store_id, user_id, productive_hours, non_productive_hours, late_hours, lop_hours } = attendanceData[i];
+            const { store_id, user_id, productive_hours, non_productive_hours, late_hours, lop_hours, created_at , status} = attendanceData[i];
 
             if (store_id) {
               let locationDetails = await isExistById(store_id)
@@ -320,6 +324,14 @@ async function list(req, res, next) {
 
             let attendanceObject = await process(attendanceData[i]);
 
+            if (created_at) {
+              attendanceObject.created_at = DateTime.getDateTimeByUserProfileTimezone(attendanceData[i].created_at, timeZone);
+            }
+            
+            if (status) {
+              attendanceObject.status = attendanceData[i].status;
+            }
+
             attendanceList.push(attendanceObject);
 
             totalProductiveHours += productive_hours;
@@ -330,7 +342,7 @@ async function list(req, res, next) {
           }
         }
       }
-      let totalDays =await AttendanceService.getAttendanceCount(attendanceWhereCondition)
+      let totalDays = await AttendanceService.getAttendanceCount(attendanceWhereCondition)
 
       const { lastPage, pageStart, pageEnd } = utils.getPageDetails(
         attendance.count,
@@ -352,9 +364,9 @@ async function list(req, res, next) {
         ),
         totalLopHours: DateTime.covertToHoursAndMinutes(totalLopHours),
         totalHours: DateTime.covertToHoursAndMinutes(totalHours),
-        additionalDay:totalDays.AdditionalDays,
-        workedDay:totalDays.workedDays,
-        Leave:totalDays.Leave,
+        additionalDay: totalDays.AdditionalDays,
+        workedDay: totalDays.workedDays,
+        Leave: totalDays.Leave,
         data: attendanceList,
         pageEnd,
         pageStart,

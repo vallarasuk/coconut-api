@@ -66,14 +66,14 @@ const create = async (req, res) => {
         data?.update_quantity_in_location_product == "true"
           ? Status.UPDATE_QUANTITY_IN_LOCATION_PRODUCT_ENABLED
           : Status.UPDATE_QUANTITY_IN_LOCATION_PRODUCT_DISABLED,
-          not_received_product:
-          data?.not_received_product == "true"
-            ? Status.NOT_RECEIVED_PRODUCT_ENABLED
-            : Status.NOT_RECEIVED_PRODUCT_DISABLED,
-            rejected_product:
-            data?.rejected_product == "true"
-              ? Status.REJECTED_PRODUCT_ENABLED
-              : Status.REJECTED_PRODUCT_DISABLED,
+      not_received_product:
+        data?.not_received_product == "true"
+          ? Status.NOT_RECEIVED_PRODUCT_ENABLED
+          : Status.NOT_RECEIVED_PRODUCT_DISABLED,
+      rejected_product:
+        data?.rejected_product == "true"
+          ? Status.REJECTED_PRODUCT_ENABLED
+          : Status.REJECTED_PRODUCT_DISABLED,
       next_status_id: nextStatus.join(","),
       allow_edit: data?.allow_edit == "true" ? Status.ALLOW_EDIT_ENABLED : Status.ALLOW_EDIT_DISABLED,
       notify_to_owner:
@@ -93,7 +93,7 @@ const create = async (req, res) => {
       default_reviewer: Number.Get(data?.default_reviewer),
       validate_amount:
         data?.validate_amount == "true" ? Status.VALIDATE_AMOUNT_ENABLED : Status.VALIDATE_AMOUNT_DISABLED,
-        allow_refund:
+      allow_refund:
         data?.allow_refund == "true" ? Status.ALLOW_REFUND_ENABLED : Status.ALLOW_REFUND_DISABLED,
       update_account_product:
         data?.update_account_product == "true"
@@ -139,7 +139,7 @@ const create = async (req, res) => {
 
       if (statusExists) {
         return res.json(Response.BAD_REQUEST, { message: "Status Already Exist" })
-    }
+      }
       // Create Status
       const statusDetail = await status.create(createData);
 
@@ -150,7 +150,7 @@ const create = async (req, res) => {
       // API response
       res.json(Response.OK, { message: "Status Added" });
     } catch (err) {
-console.log(err);
+      console.log(err);
       res.json(Response.BAD_REQUEST, { message: err.message });
     }
   } catch (err) {
@@ -188,20 +188,20 @@ const search = async (req, res) => {
     object_name: "object_name",
 
 
-};
+  };
 
-const sortParam = sort || "object_name";
+  const sortParam = sort || "object_name";
 
   // Validate sortable fields is present in sort param
   if (!Object.keys(sortableFields).includes(sortParam)) {
     return res.json(Response.BAD_REQUEST, { message: `Unable to sort product by ${sortParam}` })
-}
+  }
 
-const sortDirParam = sortDir ? sortDir.toUpperCase() : "ASC";
-// Validate order is present in sortDir param
+  const sortDirParam = sortDir ? sortDir.toUpperCase() : "ASC";
+  // Validate order is present in sortDir param
   if (!validOrder.includes(sortDirParam)) {
     return res.json(Response.BAD_REQUEST, { message: "Invalid sort order" });
-}
+  }
 
   const data = req.query;
   const where = {};
@@ -216,9 +216,9 @@ const sortDirParam = sortDir ? sortDir.toUpperCase() : "ASC";
   }
 
   if (Number.isNotNull(data.order_type)) {
-      where.object_id = {
-        [Op.in]: data.order_type
-      }
+    where.object_id = {
+      [Op.in]: data.order_type
+    }
   }
 
 
@@ -262,7 +262,7 @@ const sortDirParam = sortDir ? sortDir.toUpperCase() : "ASC";
         model: UserModal,
         as: "userDetail",
         attributes: ["id", "name", "last_name", "media_url"],
-    },
+      },
     ],
   };
 
@@ -480,7 +480,7 @@ const update = async (req, res) => {
       updateData.allowed_role_id = role.join(",");
     }
 
-      updateData.next_status_id = nextStatus.join(",");
+    updateData.next_status_id = nextStatus.join(",");
 
     if (data.sortorder) {
       updateData.sort_order = Number.Get(data.sortOrder);
@@ -507,22 +507,22 @@ const update = async (req, res) => {
       data.update_quantity_in_location_product == "true"
         ? Status.UPDATE_QUANTITY_IN_LOCATION_PRODUCT_ENABLED
         : Status.UPDATE_QUANTITY_IN_LOCATION_PRODUCT_DISABLED;
-        updateData.not_received_product=
-        data?.not_received_product == "true"
-          ? Status.NOT_RECEIVED_PRODUCT_ENABLED
-          : Status.NOT_RECEIVED_PRODUCT_DISABLED,
-          updateData.rejected_product=
-          data?.rejected_product == "true"
-            ? Status.REJECTED_PRODUCT_ENABLED
-            : Status.REJECTED_PRODUCT_DISABLED,
+    updateData.not_received_product=
+      data?.not_received_product == "true"
+        ? Status.NOT_RECEIVED_PRODUCT_ENABLED
+        : Status.NOT_RECEIVED_PRODUCT_DISABLED,
+      updateData.rejected_product=
+      data?.rejected_product == "true"
+        ? Status.REJECTED_PRODUCT_ENABLED
+        : Status.REJECTED_PRODUCT_DISABLED,
 
-    updateData.allow_edit = data.allow_edit == "true" ? Status.ALLOW_EDIT_ENABLED : Status.ALLOW_EDIT_DISABLED;
+      updateData.allow_edit = data.allow_edit == "true" ? Status.ALLOW_EDIT_ENABLED : Status.ALLOW_EDIT_DISABLED;
 
     updateData.notify_to_owner =
       data.send_notification_to_owner == "true" ? Status.NOTIFY_TO_OWNER_ENABLED : Status.NOTIFY_TO_OWNER_DISABLED;
     updateData.validate_amount =
       data.validate_amount == "true" ? Status.VALIDATE_AMOUNT_ENABLED : Status.VALIDATE_AMOUNT_DISABLED;
-      updateData.allow_refund =
+    updateData.allow_refund =
       data.allow_refund == "true" ? Status.ALLOW_REFUND_ENABLED : Status.ALLOW_REFUND_DISABLED;
     updateData.update_account_product =
       data.update_account_product == "true"
@@ -608,7 +608,7 @@ const update = async (req, res) => {
       // API response
       res.json(Response.OK, { message: "Status Updated" });
     } catch (err) {
-console.log(err);
+      console.log(err);
       res.json(Response.BAD_REQUEST, { message: err.message });
     }
   } catch (err) {
@@ -622,6 +622,7 @@ const get = async (req, res, next) => {
     const company_id = Request.GetCompanyId(req);
 
     const id = req.params.id;
+
     if (!id) {
       return res.json(Response.BAD_REQUEST, { message: "Invalid Id" });
     }
@@ -637,6 +638,7 @@ const get = async (req, res, next) => {
     const statusDetail = await status.findOne({ where: statusWhere });
 
     let roleValue = [];
+
     if (statusDetail && statusDetail.allowed_role_id) {
       let role = statusDetail.allowed_role_id.split(`,`);
       if (role && role.length > 0) {
@@ -656,6 +658,7 @@ const get = async (req, res, next) => {
     }
 
     let nextStatusValue = [];
+    
     if (statusDetail && statusDetail.next_status_id) {
       let statusId = statusDetail.next_status_id.split(`,`);
 
@@ -682,6 +685,7 @@ const get = async (req, res, next) => {
         }
       }
     }
+
     let data = {
       id: statusDetail.id,
       name: statusDetail.name,
@@ -698,7 +702,7 @@ const get = async (req, res, next) => {
       groupValue: statusDetail.group,
       location_product_last_stock_entry_date_update: statusDetail.location_product_last_stock_entry_date_update,
       update_product_price: statusDetail.update_product_price,
-      notifyToOwner: statusDetail.notify_to_owner,
+      notifyToOwner: statusDetail.object_name === "FINE" ? 1 : statusDetail.notify_to_owner,
       allowCancel: statusDetail.allow_cancel,
       updateDistributionQuantity:
         statusDetail.update_transferred_quantity == Status.UPDATE_DISTRIBUTION_QUANTITY_ENABLED ? true : false,
@@ -711,14 +715,14 @@ const get = async (req, res, next) => {
         statusDetail.group == Status.GROUP_NEW
           ? Status.GROUP_NEW_TEXT
           : statusDetail.group === Status.GROUP_DRAFT
-          ? Status.GROUP_DRAFT_TEXT
-          : statusDetail.group === Status.GROUP_REVIEW
-          ? Status.GROUP_REVIEW_TEXT
-          : statusDetail.group === Status.GROUP_PENDING
-          ? Status.GROUP_PENDING_TEXT
-          : statusDetail.group === Status.GROUP_APPROVED
-          ? Status.GROUP_APPROVED_TEXT
-          : (statusDetail.group === Status.GROUP_COMPLETED) == Status.GROUP_COMPLETED_TEXT,
+            ? Status.GROUP_DRAFT_TEXT
+            : statusDetail.group === Status.GROUP_REVIEW
+              ? Status.GROUP_REVIEW_TEXT
+              : statusDetail.group === Status.GROUP_PENDING
+                ? Status.GROUP_PENDING_TEXT
+                : statusDetail.group === Status.GROUP_APPROVED
+                  ? Status.GROUP_APPROVED_TEXT
+                  : (statusDetail.group === Status.GROUP_COMPLETED) == Status.GROUP_COMPLETED_TEXT,
       default_owner: statusDetail?.default_owner && await GetDefaultOwner(statusDetail?.default_owner, req.user.id),
       default_due_date: statusDetail?.default_due_date ? statusDetail?.default_due_date : '',
       default_reviewer: statusDetail?.default_reviewer,

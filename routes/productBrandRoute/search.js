@@ -20,6 +20,8 @@ const AccountProduct = new DataBaseService(AccountProductModel);
  * Vendor search route
  */
 async function search(req, res, next) {
+    const hasPermission = await Permission.Has(Permission.BRAND_VIEW, req);
+
 
     let { page, pageSize, search, sort, sortDir, pagination, account_id } = req.query;
 

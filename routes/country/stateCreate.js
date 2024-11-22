@@ -14,6 +14,8 @@ const CountryService = require("../../services/CountryService");
  * Customer create route
  */
  async function create (req, res, next){
+    const hasPermission = await Permission.Has(Permission.COUNTRY_EDIT, req);
+ 
 
    await CountryService.stateCreate(req, res) 
 };

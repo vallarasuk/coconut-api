@@ -22,6 +22,7 @@ const AttendanceAttachment = require("./attendanceAttachment");
 const GoalMissing = require("./goalMissing");
 const ApproveLateCheckIn = require("./approveLateCheckIn");
 const monthRecord = require("./monthRecord");
+const leaveValidation = require("./leaveValidation");
 
 module.exports = (server) => {
 	server.get("/attendance/v1/list", verifyToken, list);
@@ -47,5 +48,7 @@ module.exports = (server) => {
 	server.post("/attendance/v1/goalMissing", verifyToken, GoalMissing);
 	server.post("/attendance/v1/lateCheckIn", verifyToken, ApproveLateCheckIn);
 	server.get("/attendance/v1/monthRecord", verifyToken, monthRecord);
+	server.post("/attendance/v1/leaveValidation", verifyToken, leaveValidation);
+
 
 };

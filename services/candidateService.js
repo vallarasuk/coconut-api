@@ -15,6 +15,7 @@ const Permission = require("../helpers/Permission");
 const { Op, Sequelize } = require("sequelize");
 const mediaService = require("./MediaService");
 const { getMediaUrl } = require("../lib/utils");
+const mailService = require("./MailService");
 
 
 class CandidateService {
@@ -40,13 +41,10 @@ class CandidateService {
 
   //get
 
-  static async get(req, res, next) {
+  static async get(params) {
+    let { id, companyId } = params;
     try {
-      const { id } = req.params;
-      const companyId = Request.GetCompanyId(req);
-      if (!id) {
-        return res.json(BAD_REQUEST, { message: "Candidate Id is required" });
-      }
+    
 
       const candidateDetail = await Candidate.findOne({
         where: { id: id, company_id: companyId },
@@ -83,7 +81,7 @@ class CandidateService {
       });
 
       if (!candidateDetail) {
-        return res.json(BAD_REQUEST, { message: "Candidate Not found" });
+         throw { message: "Candidate Not found" }
       }
 
       candidateDetail.status = statusDetail?.id;
@@ -97,10 +95,11 @@ class CandidateService {
         candidate_url: candidateDetail && candidateDetail.media?.file_name && getMediaUrl(candidateDetail.media?.file_name, candidateDetail.media?.id),
 
       };
-      res.json(OK, { data: data });
+      
+      return data;
+     
     } catch (err) {
       console.log(err);
-      return res.json(400, { message: err.message });
     }
   }
 
@@ -137,6 +136,38 @@ class CandidateService {
       });
     }
   };
+
+  static sendPostResumeMail(params, data, callback){
+    const { fromMail, toMail } = params;
+    
+    try {
+     
+      const emailSubstitutions = {
+        ...data,
+      };
+
+      // Email Data
+      const emailData = {
+        fromEmail: fromMail,
+        toEmail: toMail,
+        template: 'candiateProfileSubmitEmail',
+        subject: `Job Application: - ${data?.position}`,
+        substitutions: emailSubstitutions,
+      };
+
+      mailService.sendMail(params, emailData, async (err) => {
+        if (err) {
+          History.create(StoreProduct.EMAIL_SENT_FAILED);
+          console.log(err);
+        }
+
+        return callback();
+      });
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
 }
 
 module.exports = {

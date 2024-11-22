@@ -8,6 +8,7 @@ function update(req, res, next) {
   const userDocumentId = req.params.userDocumentId;
 
 
+
   UserDocument.update(
     {
       document_type: data.documentType,

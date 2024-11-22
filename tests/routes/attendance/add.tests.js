@@ -16,6 +16,7 @@ describe("Attendance - Add", () => {
 		}
 	});
 
+	req.isAdmin = true;
 	req.connection = { remoteAddress: "127.0.0.1" };
 
 	const body = {

@@ -21,8 +21,9 @@ const Number = require("../../lib/Number");
  * tag search route
  */
 async function search(req, res, next) {
+    const hasPermission = await Permission.Has(Permission.TAG_VIEW, req);
 
-  
+
     let { page, pageSize, search, sort, sortDir, pagination, status , shift, store, location  } = req.query;
     // Validate if page is not a number
     page = page ? parseInt(page, 10) : 1;

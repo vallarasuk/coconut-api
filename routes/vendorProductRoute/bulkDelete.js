@@ -16,8 +16,12 @@ const History = require("../../services/HistoryService");
  * Product bulk delete route
  */
 async function bulkDelete(req, res, next) {
+  const hasPermission = await Permission.Has(
+    Permission.SUPPLIER_PRODUCT_BULK_DELETE,
+    req
+  );
 
-
+  
   try {
     const data = req.body;
     const productIds = data.ids;

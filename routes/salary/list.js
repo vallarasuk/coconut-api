@@ -15,12 +15,14 @@ const UserHelper = require("../../helpers/User");
 const StatusService = require('../../services/StatusService');
 const ObjectName = require("../../helpers/ObjectName");
 const Status = require("../../helpers/Status");
-const Where = require('../../lib/Where')
+const Where = require('../../lib/Where');
+const { getSettingValue } = require("../../services/SettingService");
+const Setting = require("../../helpers/Setting");
 
 
 async function list(req, res, next) {
   try {
-    let { page, pageSize, search, sort, sortDir, pagination, month, year, showTotalAmount, status } =
+    let { page, pageSize, search, sort, user, sortDir, pagination, month, year, showTotalAmount, status } =
       req.query;
 
     const salaryManageOthers = await Permission.Has(
@@ -42,7 +44,7 @@ async function list(req, res, next) {
     const companyId = Request.GetCompanyId(req);
 
     const validOrder = ["ASC", "DESC"];
-    
+
     const sortableFields = {
       id: "id",
       working_days: "working_days",
@@ -106,12 +108,16 @@ async function list(req, res, next) {
       where.month = month;
     }
 
+    if (user) {
+      where.user_id = user;
+    }
+
     if (year) {
       where.year = year;
     }
 
     if (Number.isNotNull(status) && salaryManageOthers) {
-      where.status = status
+      Where.id(where, "status", status)
     }
 
     const searchTerm = search ? search.trim() : null;
@@ -255,7 +261,8 @@ async function list(req, res, next) {
           salaryList.year,
           Request.getTimeZone(req)
         ),
-      attendanceCount:  String.isNotNull(salaryList?.attendance_count) ? JSON.parse(salaryList?.attendance_count):[],
+        attendanceCount: String.isNotNull(salaryList?.attendance) ? JSON.parse(salaryList?.attendance) : [],
+        enableAddtionalDayCalculation: await getSettingValue(Setting.ENABLE_SALARY_ADDITIONAL_HOURS, companyId) == "true" ? true : false,
         ...(user?.status == UserHelper.STATUS_INACTIVE && { user_status: UserHelper.STATUS_INACTIVE_TEXT })
       };
     });

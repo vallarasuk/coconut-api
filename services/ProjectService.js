@@ -10,8 +10,10 @@ const Number = require("../lib/Number");
 // Models
 const { Op, Sequelize } = require("sequelize");
 const Status = require("../helpers/Status.js");
+const Setting = require("../helpers/Setting.js");
+const ArrayList = require("../lib/ArrayList.js");
 // Models
-const { Project, status, Slack, ProjectUser } = require("../db").models;
+const { Project, status, Slack, ProjectUser, ProjectSettingModel } = require("../db").models;
 
 const create = async (req, res) => {
 
@@ -359,6 +361,16 @@ const list = async (req, res, next) => {
       return res.json({ message: "Company Not Found" });
     }
 
+    const UserRolePermission = async (name, project_id) => {
+      let selectedRole = await ProjectSettingModel.findOne({
+        where: { project_id: project_id, name: name, company_id: companyId },
+      });
+
+      let selectedRoleArray = selectedRole && selectedRole.value.split(",");
+      let rolePermission = selectedRoleArray && selectedRoleArray.includes(req.user.role.toString());
+      return rolePermission;
+    };
+
     const where = {
       company_id: companyId,
       status: Status.ACTIVE,
@@ -379,16 +391,24 @@ const list = async (req, res, next) => {
       where,
     };
 
+    let data=[]
     const projectDetails = await Project.findAndCountAll(query);
 
-    const projectData = projectDetails.rows.map((projectDetail) => ({
-      id: projectDetail.id,
-      status: projectDetail?.statusData?.name,
-      name: projectDetail.name,
-    }));
+    if(ArrayList.isArray(projectDetails.rows)){
+      for (let i = 0; i < projectDetails.rows.length; i++) {
+        const projectDetail = projectDetails.rows[i];
+        data.push({
+          id: projectDetail.id,
+          status: projectDetail?.statusData?.name,
+          name: projectDetail.name,
+          allow_for_assignee_change_permission: await UserRolePermission(Setting.PROJECT_SETTING_ALLOWED_ROLES_FOR_ASSIGNEE_CHANGE, projectDetail.id),
+        })
+        
+      }
+    }
 
     res.json({
-      data: projectData,
+      data: data,
     });
   } catch (err) {
     console.log(err);

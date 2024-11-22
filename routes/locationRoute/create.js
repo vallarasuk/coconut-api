@@ -18,7 +18,9 @@ const StoreStatus = require("../../helpers/StoreStatus");
  * Location create route
  */
 async function create(req, res, next) {
+  const hasPermission = await Permission.Has(Permission.LOCATION_ADD, req);
 
+  
 
   let companyId = req.user && req.user.company_id;
   const data = req.body;

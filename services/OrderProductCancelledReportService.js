@@ -14,6 +14,7 @@ const ObjectHelper = require("../helpers/ObjectHelper");
 class OrderProductCancelledReportService {
  static async search(req, res, next) {
   try {
+    const hasPermission = await Permission.Has(Permission.ORDER_PRODUCT_REPORT_VIEW, req);
  
     const params = req.query;
     let companyId = req.user && req.user.company_id;

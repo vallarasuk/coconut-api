@@ -29,7 +29,7 @@ async function schedulerJobList(req, res, next) {
          settingArray.push({ name: settings[i].name, value: settings[i].value, company_id: settings[i].company_id });
 	    }
         }
-		let currentDay = DateTime.getDayOfWeek();
+		let currentDay = DateTime.getDayOfWeek(new Date());
 		let CurrentDate = DateTime.getCurrentDay(new Date())
 		let currentMonth =DateTime.getCurrentMonth();
 		let currentDate = new Date();

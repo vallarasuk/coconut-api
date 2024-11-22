@@ -4,6 +4,7 @@ const StockReportService = require('../../services/StockReportService');
 
 async function search(req, res, next) {
   try {
+    const hasPermission = await Permission.Has(Permission.STOCK_REPORT_VIEW, req);
 
   
     const params = req.query;

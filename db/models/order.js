@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
     },
     date: {
-      type: DataTypes.DATE,
+      type: DataTypes.DATEONLY,
       allowNull: true,
     },
     total_amount: {
@@ -107,6 +107,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     reason: {
       type: DataTypes.STRING,
+      allowNull: true,
+    },
+    delivery_date: {
+      type: DataTypes.DATE,
       allowNull: true,
     },
   };

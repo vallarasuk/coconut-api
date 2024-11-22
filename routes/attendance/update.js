@@ -87,8 +87,9 @@ async function createAuditLog(oldData, updatedData, req, id) {
  */
 async function update(req, res, next) {
   try {
+    const hasPermission = await Permission.Has(Permission.ATTENDANCE_EDIT, req);
 
-   
+
 
     const attendanceId = req.params.attendanceId;
 
@@ -187,9 +188,6 @@ async function update(req, res, next) {
 
       updateData.notes = data?.notes;
 
-    if (data?.type) {
-      updateData.type = data?.type;
-    }
 
     if (data?.status) {
       updateData.status = data?.status;
@@ -256,7 +254,17 @@ async function update(req, res, next) {
 
     updateData.additional_hours = DateTime.convertHoursToMinutes(additional_hours);
 
-    updateData.days_count = data?.days_count ? data?.days_count : null;
+    if(data?.days_count){
+      updateData.days_count = data?.days_count ? data?.days_count : null;
+
+    }
+    if (data?.type) {
+      let daysCount = await AttendanceTypeService.getDaysCountById({id: data?.type, company_id: companyId })
+      updateData.type = data?.type;
+      if(attendance?.days_count == Number.Get(data?.days_count)){
+        updateData.days_count = daysCount ? daysCount : null
+      }
+    }
 
     updateData.ip_address = data?.ip_address ? data?.ip_address: Request.getIpAddress(req, res);
 

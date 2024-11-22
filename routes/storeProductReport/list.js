@@ -13,7 +13,9 @@ const { sequelize } = require("../../db");
 async function list(req, res, next) {
 
     try {
+        const hasPermission = await Permission.Has(Permission.STORE_PRODUCT_STORE_PRODUCT_REPORT_VIEW, req);
 
+    
         const params = req.query;
 
         let companyId = req.user && req.user.company_id;

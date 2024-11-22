@@ -7,7 +7,7 @@ const { defaultDateFormat } = require("../../lib/utils");
 const { getSettingList } = require("../../services/SettingService");
 const { userService } = require("../../services/UserService");
 const { getValueByObject } = require("../../services/ValidationService");
-const { UserEmployment, Location, Shift, Slack ,Tag,AddressModel, User } = require("../../db").models;
+const { UserEmployment, Location, Shift, Slack, Tag, AddressModel, User } = require("../../db").models;
 
 async function get(req, res, next) {
   try {
@@ -24,12 +24,12 @@ async function get(req, res, next) {
       const userDetails = await User.findOne({
         where: { id },
         attributes: { exclude: ["deletedAt"] },
-        include : [
+        include: [
           {
             required: false,
             model: AddressModel,
             as: "addressDetail",
-            where:{object_id : id , object_name : ObjectName.USER,company_id: companyId }
+            where: { object_id: id, object_name: ObjectName.USER, company_id: companyId }
           }
         ]
       });
@@ -56,24 +56,25 @@ async function get(req, res, next) {
         }
       })
       let settingArray = [];
-      
+
       let settingList = await getSettingList(Request.GetCompanyId(req));
 
-      if(settingList && settingList.length > 0){
-      for (let i = 0; i < settingList.length; i++) {
-        settingArray.push(settingList[i]);
+      if (settingList && settingList.length > 0) {
+        for (let i = 0; i < settingList.length; i++) {
+          settingArray.push(settingList[i]);
 
+        }
       }
-    }
 
       const Employment = await UserEmploymentModal.findAndCount(query);
       const employmentDetails = Employment.rows;
+
       let data = {}
-      const productTag = await getValueByObject(Setting.PRODUCT_TAG, settingArray,id, ObjectName.USER );
-      const userReplenishmentGoalProductCount = await getValueByObject(Setting.USER_REPLENISHMENT_GOAL_PRODUCT_COUNT, settingArray,id, ObjectName.USER );
+      const productTag = await getValueByObject(Setting.PRODUCT_TAG, settingArray, id, ObjectName.USER);
+      const userReplenishmentGoalProductCount = await getValueByObject(Setting.USER_REPLENISHMENT_GOAL_PRODUCT_COUNT, settingArray, id, ObjectName.USER);
 
       for (let i = 0; i < employmentDetails.length; i++) {
-        const {  shift, start_date, end_date, salary, working_days,tagDetail, leave_balance } = employmentDetails[i];
+        const { shift, start_date, end_date, salary, working_days, tagDetail, leave_balance, manager, primary_location, primary_shift } = employmentDetails[i];
 
 
         data.start_date = start_date
@@ -81,9 +82,12 @@ async function get(req, res, next) {
         data.shift_name = shift?.name
         data.salary = salary ? salary : ""
         data.workingDays = working_days ? working_days : ""
-        data.designationId=tagDetail?.id,
-        data.designation=tagDetail?.name
+        data.designationId = tagDetail?.id,
+          data.designation = tagDetail?.name
         data.leave_balance = leave_balance
+        data.manager = manager
+        data.primary_location = primary_location
+        data.primary_shift = primary_shift
       }
       data.productTag = productTag && productTag.split(',')
 
@@ -96,8 +100,7 @@ async function get(req, res, next) {
         data.status = userDetails.status,
         data.avatarUrl = userDetails.media_url,
         data.mobileNumber1 = userDetails.mobile_number1,
-        data.mobileNumber2 = userDetails.mobile_number2,
-        data.address1 =userDetails && userDetails.addressDetail && userDetails.addressDetail.address1,
+        data.address1 = userDetails && userDetails.addressDetail && userDetails.addressDetail.address1,
         data.address2 = userDetails && userDetails.addressDetail && userDetails.addressDetail.address2,
         data.city = userDetails && userDetails.addressDetail && userDetails?.addressDetail.city,
         data.state = userDetails && userDetails.addressDetail && userDetails.addressDetail.state,
@@ -109,19 +112,20 @@ async function get(req, res, next) {
         data.login_time = userDetails.login_time,
         data.timeZone = userDetails && userDetails.time_zone,
         data.forceSync = userDetails.force_sync,
-        data.rating = userDetails &&  userDetails.rating,
+        data.rating = userDetails && userDetails.rating,
         data.slack_id = slackDetail && slackDetail?.slack_id,
         data.createdAt = defaultDateFormat(userDetails.created_at),
         data.updatedAt = defaultDateFormat(userDetails.updated_at),
         data.date_of_joining = defaultDateFormat(userDetails.date_of_joining),
         data.mobile = userDetails.mobile,
-        data.userReplenishmentGoalProductCount=userReplenishmentGoalProductCount,
-        data.currentLocationId=userDetails?.current_location_id,
-        data.currentShiftId=userDetails?.current_shift_id,
+        data.userReplenishmentGoalProductCount = userReplenishmentGoalProductCount,
+        data.currentLocationId = userDetails?.current_location_id,
+        data.currentShiftId = userDetails?.current_shift_id,
         data.account_id = userDetails && userDetails?.account_id,
-        data.force_logout =  userDetails && userDetails?.force_logout
+        data.force_logout = userDetails && userDetails?.force_logout
+      data.allow_leave = userDetails && userDetails?.allow_leave
 
-        res.send(200, data);
+      res.send(200, data);
     } catch (err) {
       res.send(400, { message: err.message });
       next(err);

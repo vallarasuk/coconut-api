@@ -15,6 +15,7 @@ const Boolean = require("../lib/Boolean");
 const ActivityTypeGroup = require("../helpers/ActivityTypeGroup");
 
 const create = async (req, res, next) => {
+  const hasPermission = await Permission.Has(Permission.ACTIVITY_TYPE_ADD, req);
 
 
   const data = req.body;
@@ -129,6 +130,7 @@ const create = async (req, res, next) => {
 }
 
 const del = async (req, res, next) => {
+  const hasPermission = await Permission.Has(Permission.ACTIVITY_TYPE_DELETE, req);
 
 
 
@@ -171,8 +173,9 @@ const del = async (req, res, next) => {
   }
 }
 const update = async (req, res, next) => {
+  const hasPermission = await Permission.Has(Permission.ACTIVITY_TYPE_EDIT, req);
 
- 
+
   let companyId = Request.GetCompanyId(req)
   try {
     const data = req.body;

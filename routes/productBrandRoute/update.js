@@ -45,6 +45,9 @@ const createAuditLog = async (oldData, updatedData, req, id) => {
  * Product brand update route
  */
 async function update(req, res, next) {
+  const hasPermission = await Permission.Has(Permission.BRAND_EDIT, req);
+
+ 
 
   const companyId = Request.GetCompanyId(req);
   const { name, status, manufacture_name, manufacture_id } = req.body;

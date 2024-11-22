@@ -20,6 +20,8 @@ const Category = require("../../helpers/Category");
  */
 async function update(req, res, next) {
 
+    const hasPermission = await Permission.Has(Permission.PRODUCT_CATEGORY_EDIT, req);
+
 
     const data = req.body;
     const { id } = req.params;

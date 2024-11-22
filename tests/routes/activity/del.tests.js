@@ -21,6 +21,7 @@ describe("Activity - Delete", () => {
 	});
 
 	req.user = { id: 1 };
+	req.isAdmin = true;
 	req.params = { activityId: 1 };
 
 	it("should delete a Activity", (done) => {

@@ -6,6 +6,9 @@ const Boolean = require("../../lib/Boolean");
 const validator = require("../../lib/validator");
 const Permission = require("../../helpers/Permission");
 const Month = require("../../lib/Month");
+const statusService = require("../../services/StatusService");
+const ObjectName = require("../../helpers/ObjectName");
+const Status = require("../../helpers/Status");
 
 async function list(req, res, next) {
   try {
@@ -44,7 +47,6 @@ async function list(req, res, next) {
     // Validate sortable fields is present in sort param
     if (!Object.keys(sortableFields).includes(sortParam)) {
       console.log(sortParam);
-
       return res.json(BAD_REQUEST, {
         message: `Unable to sort salary by ${sortParam}`,
       });
@@ -57,40 +59,56 @@ async function list(req, res, next) {
     }
 
     const where = {};
-
+    
     where.company_id = companyId;
 
     if (!salaryManageOthers) {
       where.user_id = req.user.id;
     }
+
     if (month) {
       where.month = month;
     }
+
     if (year) {
       where.year = year;
     }
 
-    let orderArray=[];
+    let statusDetail = await statusService.getAllStatusByGroupId(
+      ObjectName.SALARY,
+      null,
+      companyId,
+      Status.GROUP_CANCELLED
+    );
 
-    const searchTerm = search ? search.trim() : null;
-    if(searchTerm !== null)   
-    {
-      let monthValue = Month.getValue(searchTerm)
-      where.month = monthValue;
-     }
-     
-    if(sortParam == "month"){
-      orderArray.push([sortParam, sortDirParam]);
-    }else{
-      orderArray.push( ["year", "DESC"],["month", "DESC"]);
+    const statusIds = statusDetail.map((status) => status.id);
+
+    if(statusIds) {
+      where.status = statusIds
     }
 
+    let orderArray = [];
+
+    const searchTerm = search ? search.trim() : null;
+    if (searchTerm !== null) {
+      let monthValue = Month.getValue(searchTerm);
+      where.month = monthValue;
+    }
+
+    if (sortParam == "month") {
+      orderArray.push([sortParam, sortDirParam]);
+    } else {
+      orderArray.push(["year", "DESC"], ["month", "DESC"]);
+    }
+
+   
     const query = {
       group: ["year", "month"],
       attributes: [
         [Sequelize.fn("MAX", Sequelize.col("id")), "id"],
         "year",
         "month",
+        [Sequelize.fn("SUM", Sequelize.col("net_salary")), "net_salary"],
       ],
       order: orderArray,
       where,
@@ -99,6 +117,7 @@ async function list(req, res, next) {
     if (validator.isEmpty(pagination)) {
       pagination = true;
     }
+
     if (Boolean.isTrue(pagination)) {
       if (pageSize > 0) {
         query.limit = pageSize;
@@ -108,12 +127,15 @@ async function list(req, res, next) {
 
     // Get Vendor list and count
     const getSalaryList = await Salary.findAndCountAll(query);
+
     const salaryData = [];
+
     getSalaryList.rows.forEach(async (values) => {
       const data = {
         monthName: `${Month.get(values?.month)},${values?.year}`,
         month: values?.month,
         year: values?.year,
+        net_salary: values?.net_salary,
       };
       salaryData.push(data);
     });

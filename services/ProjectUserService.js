@@ -7,6 +7,8 @@ const Projects = require("../helpers/Project.js")
 const statusService = require("./StatusService");
 const Users = require('../helpers/User');
 const Number = require("../lib/Number");
+const ProjectUserHelper = require("../helpers/ProjectUser");
+
 // Models
 const { Op, Sequelize } = require("sequelize");
 const project = require("../routes/project");
@@ -159,7 +161,7 @@ const search = async (req, res, next) => {
     }
 
     const query = {
-      order: sortParam !== 'user_id' ? [[sortParam, sortDirParam]] : [[{ model: User, as: 'user' }, 'name', sortDir]],
+      order: sortParam !== 'user_id' ? [[sortParam, sortDirParam]] : [[{ model: User, as: 'user' }, 'name', sortDirParam]],
       where,
       include: [
         {
@@ -256,11 +258,44 @@ const updateStatus = async (req, res, next) => {
   }
 }
 
+const bulkCreate = async (params, company_id, res) => {
+  try {
+    const existingProjectUsers = await ProjectUser.findAll({
+      where: {
+        user_id: params?.userId,
+      },
+      attributes: ['user_id'],
+    });
+
+    const existingUserIds = existingProjectUsers.map(user => user?.user_id);
+
+    const newUserIds = params?.userId.filter(id => !existingUserIds?.includes(id));
+
+    if (newUserIds?.length === 0) {
+      throw { message: "All Users already exist" }
+    }
+
+    const usersData = newUserIds?.map((id) => ({
+      user_id: id,
+      project_id: params?.projectId,
+      status: params?.status === Projects.STATUS_ACTIVE ? Projects.STATUS_ACTIVE_VALUE : Projects.STATUS_INACTIVE_VALUES,
+      company_id: company_id,
+    }));
+
+    const createResponse = await ProjectUser.bulkCreate(usersData);
+    return createResponse;
+  } catch (err) {
+    console.log(err);
+    return res.json(400, { message: err.message });
+  }
+};
+
 module.exports = {
   create,
   // update,
   del,
   // Get,
   search,
-  updateStatus
+  updateStatus,
+  bulkCreate
 };

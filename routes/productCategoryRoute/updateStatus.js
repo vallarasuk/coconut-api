@@ -15,6 +15,8 @@ const Request = require("../../lib/request");
  * Product category update route
  */
 async function updateStatus(req, res, next) {
+    const hasPermission = await Permission.Has(Permission.PRODUCT_CATEGORY_UPDATE, req);
+ 
 
     const data = req.body;
     const { id } = req.params;

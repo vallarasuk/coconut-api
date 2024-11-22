@@ -22,7 +22,10 @@ const ObjectName = require("../../helpers/ObjectName");
 
 async function updateCompanyDetails(req, res, next) {
   try {
-  
+    //Permission Check
+    const hasPermissions = await Permission.Has(Permission.COMPANY_EDIT, req);
+   
+
     const data = req.body;
     const { id } = req.params;
     const object_name = data.object_name

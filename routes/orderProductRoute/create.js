@@ -10,7 +10,9 @@ const OrderProductService = require("../../services/OrderProductService")
  */
 async function create(req, res, next) {
 
+  const hasPermission = await Permission.Has(Permission.ORDER_PRODUCT_ADD, req);
 
+ 
 
   //get body data
   const data = req.body;

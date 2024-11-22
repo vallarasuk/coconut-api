@@ -20,7 +20,10 @@ const ObjectName = require("../../helpers/ObjectName");
  * Vendor product import route
  */
 async function importVendorProduct(req, res, next) {
-
+  const hasPermission = await Permission.Has(
+    Permission.SUPPLIER_PRODUCT_IMPORT_VENDOR_PRODUCT,
+    req
+  );
 
  
   const { url } = req.query;

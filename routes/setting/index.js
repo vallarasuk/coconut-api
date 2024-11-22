@@ -6,6 +6,7 @@ const createRoute = require("./create");
 const searchRoute = require("./search");
 const getThemelist = require("./getThemeList");
 const getMenulist = require("./getMenuList");
+const generateOauthtoken = require("./oauthToken");
 
 module.exports = (server) => {
     server.put("/v1/setting/company", verifyToken, saveRoute);
@@ -14,4 +15,5 @@ module.exports = (server) => {
     server.get("/v1/setting/system", verifyToken, searchRoute);
     server.get("/v1/setting/themeList", verifyToken, getThemelist);
     server.get("/v1/setting/menuList", verifyToken, getMenulist);
+    server.post("/v1/oauthToken/generateOauthToken", verifyToken, generateOauthtoken);
 }

@@ -214,6 +214,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATE,
         allowNull: true,
       },
+      allow_leave: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+      },
     },
     {
       tableName: "user_index",

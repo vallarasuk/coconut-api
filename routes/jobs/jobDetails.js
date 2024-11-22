@@ -33,6 +33,7 @@ function JobDetails(result) {
     showProjectDetails: jobs.show_project_details,
     showCourseDetails: jobs.show_course_details,
     showVaccineStatus: jobs.show_vaccine_status,
+    field: jobs.fields
   };
 
   return data;

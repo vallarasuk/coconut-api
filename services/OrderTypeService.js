@@ -42,6 +42,7 @@ class OrderTypeService {
                 show_customer_selection: data?.show_customer_selection,
                 allow_delivery: data?.allow_delivery,
                 allow_store_order: data?.allow_store_order,
+                delivery_time: Number.isNotNull(data?.delivery_time) ? data?.delivery_time: null
             };
 
             const orderType = await OrderTypeModal.create(detail);
@@ -155,7 +156,8 @@ class OrderTypeService {
                     show_customer_selection: orderTypeData?.show_customer_selection == OrderTypeGroup.ENABLE_CUSTOMER_SELECTION ? true : false,
                     allow_store_order: orderTypeData?.allow_store_order == OrderTypeGroup.ENABLE_STORE_ORDER ? true : false,
                     allow_delivery: orderTypeData?.allow_delivery == OrderTypeGroup.ENABLE_DELIVERY_ORDER ? true : false,
-                    defaultLocation: locationDetail?.name
+                    defaultLocation: locationDetail?.name,
+                    delivery_time: orderTypeData?.delivery_time
                 });
             }
 
@@ -188,6 +190,7 @@ class OrderTypeService {
                 show_customer_selection: data?.show_customer_selection,
                 allow_delivery: data?.allow_delivery,
                 allow_store_order: data?.allow_store_order,
+                delivery_time: Number.isNotNull(data?.delivery_time) ? data?.delivery_time: null
 
             };
 
@@ -250,7 +253,7 @@ class OrderTypeService {
 
             if (!OrderTypeData)  throw { message: "No Records Found" };;
 
-            let { name, show_customer_selection, default_location,allow_store_order,allow_delivery } = OrderTypeData.get();
+            let { name, show_customer_selection, default_location,allow_store_order,allow_delivery, delivery_time} = OrderTypeData.get();
 
             let data = {
                 name,
@@ -258,7 +261,8 @@ class OrderTypeService {
                 default_location,
                 allow_store_order: allow_store_order == OrderTypeGroup.ENABLE_STORE_ORDER ? true : false,
                 allow_delivery: allow_delivery == OrderTypeGroup.ENABLE_DELIVERY_ORDER ? true : false,
-                show_customer_selection: show_customer_selection == OrderTypeGroup.ENABLE_CUSTOMER_SELECTION ? true : false
+                show_customer_selection: show_customer_selection == OrderTypeGroup.ENABLE_CUSTOMER_SELECTION ? true : false,
+                delivery_time: delivery_time
             };
             return data
 
@@ -301,7 +305,8 @@ class OrderTypeService {
                     companyId: OrderTypeData?.company_id,
                     show_customer_selection: OrderTypeData?.show_customer_selection,
                     allow_store_order: OrderTypeData?.allow_store_order,
-                    allow_delivery: OrderTypeData?.allow_delivery
+                    allow_delivery: OrderTypeData?.allow_delivery,
+                    delivery_time: OrderTypeData?.delivery_time
 
                 });
             }

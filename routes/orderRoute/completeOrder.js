@@ -14,6 +14,7 @@ const Status = require("../../helpers/Status");
 async function completeOrder(req, res, next) {
     try {
 
+        const hasPermission = await Permission.Has(Permission.ORDER_EDIT, req);
 
 
         let { id } = req.params;

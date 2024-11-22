@@ -290,26 +290,8 @@ const search = async (req, res) => {
       return res.json(Response.BAD_REQUEST, { message: "Company Not Found" });
     }
 
-    let rolePermission = Request.getRolePermission(req);
 
-
-  
-
-    // manage other permission check
-    const manageOthers = await Permission.GetValueByName(
-      Permission.STOCK_ENTRY_MANAGE_OTHERS,
-      rolePermission
-    );
-
-    if (!manageOthers) {
-      let lastCheckIn = Request.getCurrentLocationId(req);
-
-      if (!lastCheckIn) {
-        return res.json(Response.BAD_REQUEST, {
-          message: "Check-in record is missing",
-        });
-      }
-    }
+    
         // get params
         const params = req.query;
         // destrcuture the params
@@ -641,6 +623,7 @@ async function get(req, res, next) {
 
 const del = async (req, res) => {
     // validate permission exiist or not
+    const hasPermission = await Permission.GetValueByName(Permission.STOCK_ENTRY_DELETE, req.role_permission);
 
  
     let stockEntryId = req.params.id;
@@ -678,8 +661,10 @@ const del = async (req, res) => {
 }
 
 const updateStatus = async (req, res, next) => {
+    const hasPermission = await Permission.GetValueByName(Permission.STOCK_ENTRY_STATUS_UPDATE, req.role_permission);
 
-  
+   
+
     const data = req.body;
     const { id } = req.params;
 

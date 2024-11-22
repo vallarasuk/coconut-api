@@ -3,6 +3,7 @@ const Permission = require("../helpers/Permission");
 const { BAD_REQUEST } = require("../helpers/Response");
 const Request = require("../lib/request");
 const DateTime = require("../lib/dateTime")
+const statusService = require("../services/StatusService");
 
 const History = require("./HistoryService");
 const { 
@@ -28,6 +29,7 @@ const Activity = require("../helpers/Activity");
 const { getSettingValue } = require("./SettingService");
 const Setting = require("../helpers/Setting");
 const Response = require("../helpers/Response");
+const ArrayList = require("../lib/ArrayList");
 
 
 const create = async (params) => {
@@ -134,8 +136,7 @@ const del = async (req, res, next) => {
 
 const search = async (req, res, next) => {
   try {
-    let { page, pageSize, search, sort, sortDir, primary, pagination, user, status, startDate, endDate, activityType, type, location } = req.query;
-    console.log('req.query>>>------------------------> ', req.query);
+    let { page, pageSize, search, sort, sortDir, primary, pagination,group, user, status, startDate, endDate, activityType, type, location } = req.query;
 
     const manageOthersPermission = await Permission.Has(Permission.ACTIVITY_MANAGE_OTHERS, req);
     const company_id = Request.GetCompanyId(req);
@@ -168,6 +169,13 @@ const search = async (req, res, next) => {
         where.owner_id = user
       }
     } else {
+      where.owner_id = userId
+    }
+
+    if(group && Number.isNotNull(group)){
+      let pendingActivityStatus = await statusService.getAllStatusByGroupId(ObjectName.ACTIVITY, group, company_id);
+      let pendingActivityIds = ArrayList.isArray(pendingActivityStatus)? pendingActivityStatus.map((value) =>value?.id):[]
+      where.status = pendingActivityIds ;
       where.owner_id = userId
     }
 

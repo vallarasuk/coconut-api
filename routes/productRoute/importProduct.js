@@ -22,8 +22,9 @@ const ObjectName = require("../../helpers/ObjectName");
  * Product create route
  */
 async function importProduct(req, res, next) {
+    const hasPermission = await Permission.Has(Permission.PRODUCT_ADD, req);
 
-   
+
     const { url } = req.query;
     const companyId = Request.GetCompanyId(req);
     try {

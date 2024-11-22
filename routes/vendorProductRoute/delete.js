@@ -15,9 +15,12 @@ const History = require("../../services/HistoryService");
  * Vendor product delete route by product id
  */
 async function del(req, res, next) {
+  const hasPermission = await Permission.Has(
+    Permission.SUPPLIER_PRODUCT_DELETE,
+    req
+  );
 
-
-
+  
   const { id } = req.params;
   const companyId = req.user.company_id;
 

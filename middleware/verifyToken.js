@@ -83,7 +83,9 @@ module.exports = (req, res, next) => {
       "current_shift_id",
       'current_location_id',
       "time_zone",
-      "last_checkin_at"
+      "last_checkin_at",
+      "mobile_number1",
+      "allow_leave"
     ],
     where: { session_id: token },
   }).then(async(user) => {
@@ -109,9 +111,10 @@ module.exports = (req, res, next) => {
     user = user.get();
 
     req.user = user;
-    // req.isManager = user.role === roles.MANAGER;
-    // req.isScrumMaster = user.role === roles.SCRUM_MASTER;
-    // req.isSuperAdmin = user.role === roles.SUPER_ADMIN;
+    req.isAdmin = user.role === roles.ADMIN;
+    req.isManager = user.role === roles.MANAGER;
+    req.isScrumMaster = user.role === roles.SCRUM_MASTER;
+    req.isSuperAdmin = user.role === roles.SUPER_ADMIN;
     return next();
   });
 };

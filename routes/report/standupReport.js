@@ -42,7 +42,7 @@ function getProjectTicketTypesByType(type, callback) {
 function dailyReports(req, res, next) {
   const data = req.query;
 
-
+ 
 
   const todayDate = utils.getSQlFormattedDate();
   const date = data.weekdaysDate;

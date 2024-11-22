@@ -50,7 +50,8 @@ const add = async (req, res, next) => {
       start_date: DateTime.Get(data.start_date),
       end_date: DateTime.Get(data.end_date),
       salary: Number.Get(data.salary),
-      leave_balance: data?.leave_balance
+      leave_balance: data?.leave_balance,
+      manager: data?.manager
     };
     const UserEmploymentDetail = await UserEmploymentService.create(createData);
 
@@ -83,29 +84,35 @@ const update = async (req, res, next) => {
 
     //update User Employment
     const updateData = {};
-    
 
-    
-      updateData.designation = data?.designation?data?.designation:null;
-    
-    
-      updateData.start_date =data?.start_date ? DateTime.formateDateAndTime(data.start_date):null;
-    
-    
-      updateData.end_date = data?.end_date?DateTime.formateDateAndTime(data.end_date):null;
-    
-      updateData.salary = data?.salary ? Number.Get(data?.salary):null;
-  
+    updateData.designation = data?.designation ? data?.designation : null;
+
+    updateData.manager = data?.manager ? data?.manager : null;
+
+    updateData.primary_location = data?.primaryLocation ? data?.primaryLocation : null;
+
+    updateData.primary_shift = data?.primaryShift ? data?.primaryShift : null;
+
+    updateData.start_date = data?.start_date ? DateTime.formateDateAndTime(data.start_date) : null;
+
+    updateData.end_date = data?.end_date ? DateTime.formateDateAndTime(data.end_date) : null;
+
+    updateData.salary = data?.salary ? Number.Get(data?.salary) : null;
+
     updateData.company_id = companyId;
-  
-      updateData.working_days = data?.working_days ? data?.working_days:null;
-      updateData.leave_balance = data?.leave_balance ? data?.leave_balance: null;   
+
+    updateData.working_days = data?.working_days ? data?.working_days : null;
+
+    updateData.leave_balance = data?.leave_balance ? data?.leave_balance : null;
+
     let updateUser = {};
+
     updateUser.company_id = companyId;
-   
-      updateUser.login_time = data?.login_time?data?.login_time:null;
-    
-      updateUser.minimum_working_hours = data?.minimum_working_hours ? data?.minimum_working_hours:null;
+
+    updateUser.login_time = data?.login_time ? data?.login_time : null;
+
+    updateUser.minimum_working_hours = data?.minimum_working_hours ? data?.minimum_working_hours : null;
+
     if (useDetail) {
       const save = await useDetail.update(updateData);
       await User.update(updateUser, { where: { id: id, company_id: companyId } });
@@ -128,7 +135,7 @@ const update = async (req, res, next) => {
           ObjectName.USER_EMPLOYMENT,
           userEmploymentDetail?.id
         );
-        await UserService.reindex(id,companyId)
+        await UserService.reindex(id, companyId)
       });
       res.json(Response.OK, { message: 'User Employment added ' });
     }

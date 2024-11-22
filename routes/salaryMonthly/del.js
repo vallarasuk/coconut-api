@@ -7,7 +7,7 @@ const validator = require("../../lib/validator");
 const { SalaryMonthly } = require("../../db").models;
 
 function del(req, res, next) {
-
+ 
 
   const salaryId = req.params.salaryId;
   if (!validator.isInteger(salaryId)) {

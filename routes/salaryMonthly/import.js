@@ -6,7 +6,7 @@ const csv = require("fast-csv");
 const { SalaryMonthly } = require("../../db").models;
 
 function importList(req, res, next) {
-
+  
 
   const file = req.files.file;
 

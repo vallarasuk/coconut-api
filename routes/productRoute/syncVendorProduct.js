@@ -23,7 +23,9 @@ const { product, Media: MediaModel } = require("../../db").models;
  * Sync product from vendor product route
  */
 async function syncVendorProduct(req, res, next) {
-  
+    const hasPermission = await Permission.Has(Permission.SYNC_FROM_VENDOR_URL, req);
+
+
     const { id } = req.params;
     const companyId = req.user.company_id;
 

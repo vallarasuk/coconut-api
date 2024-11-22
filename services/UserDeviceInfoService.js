@@ -379,7 +379,9 @@ class UserDeviceInfoService {
   static async statusUpdate(req, res) {
     try {
       const companyId = Request.GetCompanyId(req);
-   
+      const hasPermission = await Permission.Has(Permission.DEVICE_INFO_STATUS_UPDATE, req);
+     
+
       const data = req.body;
       const { id } = req.params;
 

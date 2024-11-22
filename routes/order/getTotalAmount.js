@@ -6,6 +6,7 @@ const orderService = require("../../services/OrderService");
 const DateTime = require("../../lib/dateTime");
 const Setting = require("../../helpers/Setting");
 const { getSettingValue } = require("../../services/SettingService");
+const { TODAY_VALUE } = require("../../helpers/Date");
 
 async function getTotalAmount(req, res, next) {
     try {
@@ -21,12 +22,12 @@ async function getTotalAmount(req, res, next) {
   
       const defaultTimeZone = Request.getTimeZone(req);
 
-    let start_date = DateTime.toGetISOStringWithDayStartTime(new Date())
-    let end_date = DateTime.toGetISOStringWithDayEndTime(new Date())
+
+    let date = DateTime.getCustomDateTime(TODAY_VALUE, defaultTimeZone)
 
       let params ={
-        startDate:start_date,
-        endDate:end_date,
+        startDate:date.startDate,
+        endDate:date.endDate,
         userId: userId,
         companyId: companyId,
         timeZone : defaultTimeZone

@@ -27,7 +27,7 @@ async function Get(req, res, next) {
 
     if (!ShiftData) return res.json(200, { message: "No Records Found" });
 
-    let { name, status, start_time, end_time, checkin_allowed_from, checkin_allowed_till, grace_period } = ShiftData.get();
+    let { name, status, start_time, end_time, checkin_allowed_from, checkin_allowed_till, grace_period, cutoff_time } = ShiftData.get();
 
     let data = {
       name,
@@ -36,7 +36,9 @@ async function Get(req, res, next) {
       end_time: DateTime.convertGmtTimeToDateTimeByUserProfileTimezone(end_time,new Date(),userDefaultTimeZone),
       checkin_allowed_from: DateTime.convertGmtTimeToDateTimeByUserProfileTimezone(checkin_allowed_from,new Date(),userDefaultTimeZone),
       checkin_allowed_till: DateTime.convertGmtTimeToDateTimeByUserProfileTimezone(checkin_allowed_till,new Date(),userDefaultTimeZone),
-      grace_period: grace_period
+      grace_period: grace_period,
+      cutoff_time: cutoff_time
+
     };
 
     res.json(200, data);

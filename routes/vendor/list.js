@@ -15,6 +15,7 @@ const {
 
 function list(req, res, next) {
 
+
   const data = req.query;
   let page = 1;
   let pageSize = 20;

@@ -7,6 +7,8 @@ const PurchaseService = require("../../services/services/purchaseService");
 async function search(req, res, next) {
   try {
 
+    const hasPermission = await Permission.Has(Permission.PURCHASE_REPORT_VENDOR_WISE_VIEW, req);
+
 
     let params =  req.query
 

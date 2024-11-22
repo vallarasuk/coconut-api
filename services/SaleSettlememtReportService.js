@@ -7,19 +7,23 @@ const {
 const {
   shortDateAndTime
 } = require("../lib/dateTime");
-
-const location = require("../helpers/Location");
+const {
+  Op,
+  Sequelize
+} = require("sequelize");
+const locationConstant = require("../helpers/Location");
 const DateTime = require("../lib/dateTime");
 const DataBaseService = require("../lib/dataBaseService");
 const LocationService = new DataBaseService(Location);
 const saleSettlementService = new DataBaseService(SaleSettlement);
-const Numbers = require("../lib/Number");
+const Number = require("../lib/Number");
+const { getCashAndUpiTotalAmount } = require("./OrderService");
+const ObjectName = require("../helpers/ObjectName");
+const Status = require("../helpers/Status");
 const searchStore = async (params, companyId, timeZone, date) => {
-
+const StatusService = require("./StatusService")
   try {
-    const {
-      Op
-    } = require("sequelize");
+   
     let {
       page,
       pageSize,
@@ -29,7 +33,8 @@ const searchStore = async (params, companyId, timeZone, date) => {
       pagination,
       shift,
       startDate,
-      endDate
+      endDate,
+      location
     } = params;
     // Validate if page is not a number
     page = page ? parseInt(page, 10) : 1;
@@ -75,11 +80,16 @@ const searchStore = async (params, companyId, timeZone, date) => {
 
     let where = {};
     where.company_id = companyId;
-    where.allow_sale = location.ENABLED;
-    where.status = location.STATUS_ACTIVE;
+
+    if(Number.isNotNull(location)){
+      where.id =location
+    }
+
+    where.allow_sale = locationConstant.ENABLED;
+    where.status = locationConstant.STATUS_ACTIVE;
 
     if (shift || startDate || endDate) {
-      where.status = { [Op.or]: [location.STATUS_ACTIVE, location.STATUS_INACTIVE] }
+      where.status = { [Op.or]: [locationConstant.STATUS_ACTIVE, locationConstant.STATUS_INACTIVE] }
     }
     // Search term
     const searchTerm = search ? search.trim() : null;
@@ -112,6 +122,19 @@ const searchStore = async (params, companyId, timeZone, date) => {
     const locationDetails = await LocationService.findAndCount(query);
     const locationData = [];
 
+    let start_date = DateTime.toGetISOStringWithDayStartTime(startDate)
+    let end_date = DateTime.toGetISOStringWithDayEndTime(endDate)
+
+    let OrderStatus = await StatusService.getAllStatusByGroupId(ObjectName.ORDER_TYPE,Status.GROUP_COMPLETED,companyId)
+    let OrderStatusIds = OrderStatus && OrderStatus.length > 0 && OrderStatus.map((data)=> data?.id)|| ""
+    let filterParams = {
+      companyId: companyId,
+      startDate: (date?.startDate && date) ? date?.startDate : start_date ? DateTime.toGMT(start_date, timeZone) : "",
+      endDate: (date?.endDate && date) ? date?.endDate : end_date ? DateTime.toGMT(end_date, timeZone) : "",
+      shift: Number.Get(shift),
+      timeZone: timeZone,
+      status:OrderStatusIds
+    }
     for (let storeDetail of locationDetails.rows) {
       const {
         id,
@@ -149,7 +172,7 @@ const searchStore = async (params, companyId, timeZone, date) => {
         };
       }
 
-      if (date && Numbers.isNotNull(date)) {
+      if (date && Number.isNotNull(date)) {
         saleWhere.date = {
           [Op.and]: {
             [Op.gte]: date?.startDate,
@@ -161,23 +184,42 @@ const searchStore = async (params, companyId, timeZone, date) => {
       saleWhere.store_id = id;
       saleWhere.company_id = companyId;
 
-      if (shift)
-        saleWhere.shift = shift
-      let salesDetails = await saleSettlementService.findAndCount({
-        where: saleWhere
-      });
+
+      if (Number.isNotNull(shift))
+        {
+          saleWhere.shift = Number.Get(shift)
+        }
+
+        let salesDetails = await saleSettlementService.findAndCount({
+          where: saleWhere,
+          attributes: [
+            [Sequelize.fn('DATE', Sequelize.col('date')), 'date'], // Group by date
+            [Sequelize.fn('COUNT', Sequelize.fn('DISTINCT', Sequelize.col('date'))), 'saleCount'], // Count distinct settlements (uniqno) per day
+            [Sequelize.fn('SUM', Sequelize.col('amount_cash')), 'totalCash'], // Sum of amount_cash
+            [Sequelize.fn('SUM', Sequelize.col('amount_upi')), 'totalUpi'] // Sum of amount_upi
+          ],
+          group: ['date'], // Group by date
+          raw: true // Return raw results
+        });
+        
+        filterParams.location= id
+
+      let orderData = await getCashAndUpiTotalAmount(filterParams);
+
       let totalAmount = 0;
+      let totalAverage = 0;
 
       let total_amount_upi = 0;
       let total_amount_cash = 0;
 
       for (let data of salesDetails.rows) {
         let salesData = {
-          ...data.get()
+          ...data
         }
-        totalAmount = totalAmount + Number(salesData.amount_cash) + Number(salesData.amount_upi)
-        total_amount_upi += Number(salesData.amount_upi)
-        total_amount_cash += Number(salesData.amount_cash)
+        totalAmount = totalAmount + Number.Get(salesData.totalCash) + Number.Get(salesData.totalUpi)
+        total_amount_upi += Number.Get(salesData.totalCash)
+        total_amount_cash += Number.Get(salesData.totalUpi)
+        totalAverage += Number.Get(salesData.saleCount)
       }
 
       const data = {
@@ -191,12 +233,13 @@ const searchStore = async (params, companyId, timeZone, date) => {
         shopifyApiKey: shopify_api_key ? shopify_api_key : "",
         totalAmount: totalAmount,
         total_amount_upi: total_amount_upi,
-        total_amount_cash: total_amount_cash
+        total_amount_cash: total_amount_cash,
+        averageOrderAmount:Number.Get( orderData.totalAmount/totalAverage)
       };
       // formate object property
       data.createdAt = shortDateAndTime(createdAt);
       data.updatedAt = shortDateAndTime(updatedAt);
-      if (totalAmount > 0 || status == location.STATUS_ACTIVE) {
+      if (totalAmount > 0 || status == locationConstant.STATUS_ACTIVE) {
         locationData.push(data);
       }
     };
@@ -220,7 +263,7 @@ const getDataBasedOnType = async (type, SalesDetails) => {
       let year = await DateTime.getYear(value.date);
       year = String(year).slice(-2)
       let salesData = {
-        amount: Number(value.get("amount_upi")) + Number(value.get("amount_cash")),
+        amount: Number.Get(value.get("amount_upi")) + Number.Get(value.get("amount_cash")),
         date: DateTime.getMonth(value.date) + " " + year,
         amount_cash: value.get("amount_cash"),
         amount_upi: value.get("amount_upi"),
@@ -242,7 +285,7 @@ const getDataBasedOnType = async (type, SalesDetails) => {
         date: DateTime.Format(value.date),
         amount_cash: value.get("amount_cash"),
         amount_upi: value.get("amount_upi"),
-        amount: Number(value.get("amount_upi")) + Number(value.get("amount_cash")),
+        amount: Number.Get(value.get("amount_upi")) + Number.Get(value.get("amount_cash")),
       }
       saleData.push(salesData)
     })

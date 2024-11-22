@@ -11,7 +11,10 @@ async function search(req, res, next) {
   if (!company_id) {
     return res.json(Response.BAD_REQUEST, "Company Not Found");
   }
-
+  const hasPermission = await Permission.GetValueByName(
+    Permission.TRANSFER_PRODUCT_REPORT_VIEW,
+    req.role_permission
+  );
 
   let timeZone = Request.getTimeZone(req);
   let {

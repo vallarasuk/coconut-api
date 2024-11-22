@@ -20,7 +20,8 @@ function list(req, res, next) {
   }
 
   const payrollWhereCondition = {};
-  const userId = req.user.id;
+  const isAdmin = req.isAdmin;
+  const userId = isAdmin ? data.userId : req.user.id;
   if (userId) {
     payrollWhereCondition.user_id = userId;
   }

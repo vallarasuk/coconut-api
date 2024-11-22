@@ -18,7 +18,12 @@ const { TransferProduct,  Transfer: TransferModal } = require("../../db").models
 const bulkInsert = async (req, res) => {
 
     try {
- 
+        // Validate Permissions exist or not.
+        const hasPermission = await Permission.GetValueByName(
+            Permission.TRANSFER_PRODUCT_ADD,
+            req.role_permission
+        );
+   
 
         //get company Id from request
         const companyId = Request.GetCompanyId(req);

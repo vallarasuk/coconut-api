@@ -15,6 +15,11 @@ const ObjectName = require("../../helpers/ObjectName");
  * Product update route
  */
 async function updateStatus(req, res, next) {
+  const hasPermission = await Permission.Has(
+    Permission.LOCATION_STATUS_UPDATE,
+    req
+  );
+
  
 
   const data = req.body;

@@ -4,7 +4,7 @@ module.exports = (sequelize, DataTypes) => {
     const location = require("./Location")(sequelize, DataTypes);
     const Tag = require("./Tag")(sequelize, DataTypes);
 
-	const shift = require("./Shift")(sequelize, DataTypes)
+    const shift = require("./Shift")(sequelize, DataTypes)
     const UserEmployment = sequelize.define(
         "user_employment",
         {
@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
             salary: {
                 type: DataTypes.NUMERIC,
                 allowNull: true,
-              },
+            },
             company_id: {
                 type: DataTypes.INTEGER,
                 allowNull: true,
@@ -50,9 +50,9 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
                 type: DataTypes.DATE,
             },
-            working_days:{
-                type:DataTypes.STRING,
-                allowNull:true
+            working_days: {
+                type: DataTypes.STRING,
+                allowNull: true
             },
             leave_balance: {
                 type: DataTypes.INTEGER,
@@ -60,6 +60,18 @@ module.exports = (sequelize, DataTypes) => {
             },
             leave_balance_updated_at: {
                 type: DataTypes.DATE,
+                allowNull: true,
+            },
+            manager: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
+            primary_location: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
+            primary_shift: {
+                type: DataTypes.INTEGER,
                 allowNull: true,
             },
         },
@@ -71,9 +83,9 @@ module.exports = (sequelize, DataTypes) => {
             deletedAt: false,
         }
     );
-    UserEmployment.belongsTo(Tag,{
-       as:"tagDetail",
-       foreignKey:"designation" 
+    UserEmployment.belongsTo(Tag, {
+        as: "tagDetail",
+        foreignKey: "designation"
     })
     return UserEmployment;
 };

@@ -42,7 +42,6 @@ const get = async(req, res) =>{
           let params={
             company_id: companyId,
             user_id: userId,
-            date: new Date(),
             timeZone: userDefaultTimeZone,
             store_id: req?.user?.current_location_id ,
             shift_id: req?.user?.current_shift_id,

@@ -15,7 +15,6 @@ async function create(req, res, next) {
     }
 
 
-
     let currentShiftId = req?.user?.current_shift_id
     let body = req.body;
 

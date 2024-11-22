@@ -7,9 +7,6 @@ const History = require("./HistoryService");
 const Order = require("../helpers/Order");
 const ProductService = require("./services/ProductService");
 
-
-
-
 const {
   order: orderModel,
   Location,
@@ -21,7 +18,7 @@ const {
   productIndex,
   status: statusModel,
   OrderType,
-  Media
+  Media,
 } = require("../db").models;
 const { Op, QueryTypes, Sequelize } = require("sequelize");
 const Request = require("../lib/request");
@@ -39,13 +36,18 @@ const Response = require("../helpers/Response");
 const statusService = require("./StatusService");
 const Status = require("../helpers/Status");
 const AttendanceService = require("./AttendanceService");
-const validator = require(".././lib/validator")
+const validator = require(".././lib/validator");
 const Boolean = require("../lib/Boolean");
-const { getValueByObject, saveSetting, getSettingList, getSettingValue } = require("./SettingService");
+const {
+  getValueByObject,
+  saveSetting,
+  getSettingList,
+  getSettingValue,
+} = require("./SettingService");
 const Setting = require("../helpers/Setting");
 const location = require("../helpers/Location");
 const Currency = require("../lib/currency");
-const orderProductModelService = new DataBaseService(orderProduct)
+const orderProductModelService = new DataBaseService(orderProduct);
 const SlackService = require("./SlackService");
 const UserService = require("./UserService");
 const AddressService = require("./AddressService");
@@ -57,13 +59,12 @@ const ShiftService = require("./ShiftService");
 const AccountService = require("./AccountService");
 const ObjectHelper = require("../helpers/ObjectHelper");
 const OrderTypeService = require("./OrderTypeService");
-const config = require("../config/config")
+const config = require("../config/config");
 
 const ArrayList = require("../lib/ArrayList");
 const String = require("../lib/string");
 const { OrderTypeGroup } = require("../helpers/OrderTypeGroup");
 const Where = require("../lib/Where");
-
 
 const dateTime = new DateTime();
 /**
@@ -156,7 +157,9 @@ const createOrder = async (data) => {
       total_amount: data.total_amount,
       store_id: data.storeId,
       Order_Id: data.OrderId,
-      owner: data?.sales_executive_user_id ? data.sales_executive_user_id : data.owner,
+      owner: data?.sales_executive_user_id
+        ? data.sales_executive_user_id
+        : data.owner,
     };
 
     return await orderModel.create(createData);
@@ -164,7 +167,6 @@ const createOrder = async (data) => {
     console.log(err);
   }
 };
-
 
 /**
  * Search order
@@ -189,13 +191,9 @@ const searchOrder = async (params, req) => {
       endDate,
       paymentType,
       orderId,
-      customer_phone_number,
       showTotalAmount,
       orderDate,
-      currentShift,
       currentLocation,
-      isStoreOrder,
-      isDeliveryOrder
     } = params;
     // Validate if page is not a number
     page = page ? parseInt(page, 10) : 1;
@@ -210,20 +208,6 @@ const searchOrder = async (params, req) => {
       throw { message: "Invalid page size" };
     }
 
-    let type = params && params?.type ? params?.type:null
-
-    let orderTypeList
-
-    
-    if(isStoreOrder == OrderTypeGroup.ENABLE_STORE_ORDER){
-      orderTypeList = await OrderTypeService.list({},companyId,{allow_store_order:isStoreOrder})
-      type = orderTypeList && orderTypeList.length >0 ? orderTypeList.map((value=>value.id)):[]
-    }
-    
-    if(isDeliveryOrder == OrderTypeGroup.ENABLE_DELIVERY_ORDER){
-      orderTypeList = await OrderTypeService.list({},companyId,{allow_delivery:isDeliveryOrder})
-      type = orderTypeList && orderTypeList.length >0 ? orderTypeList.map((value=>value.id)):[]
-    }
     // Sortable Fields
     const validOrder = ["ASC", "DESC"];
     const sortableFields = {
@@ -248,10 +232,13 @@ const searchOrder = async (params, req) => {
     };
 
     let timeZone = Request.getTimeZone(req);
-    let start_date = DateTime.toGetISOStringWithDayStartTime(startDate)
-    let end_date = DateTime.toGetISOStringWithDayEndTime(endDate)
+    let start_date = DateTime.toGetISOStringWithDayStartTime(startDate);
+    let end_date = DateTime.toGetISOStringWithDayEndTime(endDate);
 
-    const hasOrderManageOthersPermission = await Permission.GetValueByName(Permission.ORDER_MANAGE_OTHERS, req.role_permission);
+    const hasOrderManageOthersPermission = await Permission.GetValueByName(
+      Permission.ORDER_MANAGE_OTHERS,
+      req.role_permission
+    );
     const sortParam = sort || "order_number";
     // Validate sortable fields is present in sort param
     if (!Object.keys(sortableFields).includes(sortParam)) {
@@ -269,7 +256,11 @@ const searchOrder = async (params, req) => {
     where.company_id = companyId;
     // Search by location id
     if (Number.isNotNull(data?.store_id) || Number.isNotNull(currentLocation)) {
-      where = { store_id: Number.isNotNull(data?.store_id) ? data.store_id : currentLocation };
+      where = {
+        store_id: Number.isNotNull(data?.store_id)
+          ? data.store_id
+          : currentLocation,
+      };
     }
 
     // Search by name
@@ -283,31 +274,28 @@ const searchOrder = async (params, req) => {
       where.id = orderId;
     }
 
-    if(Number.isNotNull(type)){
-      where.type =type
-    }
-
     if (status) {
-      where.status = status
+      where.status = status;
     }
 
     if (paymentType) {
-      where.payment_type = paymentType
+      where.payment_type = paymentType;
     }
     if (!hasOrderManageOthersPermission) {
       let userId = req && req.user && req.user.id;
-        if (userId) {
-          if (customer_account) {
-            where.customer_account = userId
-
-          } else {
-            where.owner = userId;
-
+      if (userId) {
+        if (customer_account) {
+          where.customer_account = userId;
+        } else {
+          where.owner = userId;
         }
-      } 
+      }
     }
 
-    let date = DateTime.getCustomDateTime(orderDate || req.query.date, timeZone);
+    let date = DateTime.getCustomDateTime(
+      orderDate || req.query.date,
+      timeZone
+    );
 
     // Apply filters if there is one
     if (Number.isNotNull(location)) {
@@ -315,13 +303,9 @@ const searchOrder = async (params, req) => {
     }
 
     if (Number.isNotNull(shift)) {
-      where.shift = shift
+      where.shift = shift;
     }
     if (Number.isNotNull(orderDate || req?.query?.date)) {
-      if (type == Order.TYPE_STORE && !hasOrderManageOthersPermission) {
-
-        where.shift = currentShift;
-      }
       if (date && Number.isNotNull(date)) {
         where.date = {
           [Op.and]: {
@@ -340,7 +324,7 @@ const searchOrder = async (params, req) => {
       where.shift = shift;
     }
 
-    Where.id(where, "owner", params?.owner)
+    Where.id(where, "owner", params?.owner);
     if (startDate && !endDate) {
       where.date = {
         [Op.and]: {
@@ -367,28 +351,14 @@ const searchOrder = async (params, req) => {
     }
     const whereLocation = {};
 
-    whereLocation.company_id = companyId
+    whereLocation.company_id = companyId;
 
-    let statusDetail = await statusService.Get(ObjectName.ORDER_TYPE, Status.GROUP_DRAFT, companyId,{object_id:type});
+    let statusDetail = await statusService.Get(
+      ObjectName.ORDER_TYPE,
+      Status.GROUP_DRAFT,
+      companyId
+    );
 
-    if (statusDetail && statusDetail?.id) {
-      where[Op.or] = [
-        {
-          status: {
-            [Op.ne]: statusDetail?.id // Status is not "draft"
-          }
-        },
-        {
-          status: statusDetail?.id, // Status is "draft"
-          total_amount: {
-            [Op.and]: [
-              { [Op.ne]: 0 },    // Not equal to 0
-              { [Op.ne]: null }  // Not equal to null
-            ]
-          }
-        }
-      ];
-    }
     const searchTerm = search ? search.trim() : null;
     if (searchTerm) {
       if (searchTerm && isNaN(parseFloat(searchTerm))) {
@@ -406,7 +376,10 @@ const searchOrder = async (params, req) => {
         ];
       }
 
-      if (typeof parseFloat(searchTerm) == "number" && !isNaN(parseFloat(searchTerm))) {
+      if (
+        typeof parseFloat(searchTerm) == "number" &&
+        !isNaN(parseFloat(searchTerm))
+      ) {
         where[Op.or] = [
           {
             order_number: {
@@ -422,18 +395,18 @@ const searchOrder = async (params, req) => {
       }
     }
 
-    let order = []
+    let order = [];
 
     if (sort === "locationName") {
-      order.push([[{ model: Location, as: 'location' }, 'name', sortDir]])
-    }
-    else if (sort === "status") {
-      order.push([[{ model: statusModel, as: 'statusDetail' }, 'name', sortDir]])
+      order.push([[{ model: Location, as: "location" }, "name", sortDir]]);
+    } else if (sort === "status") {
+      order.push([
+        [{ model: statusModel, as: "statusDetail" }, "name", sortDir],
+      ]);
     } else if (sort === "customer_account") {
-      order.push([{ model: account, as: 'accountDetail' }, 'name', sortDir])
-    }
-    else {
-      order.push([[sortableFields[sortParam], sortDirParam]])
+      order.push([{ model: account, as: "accountDetail" }, "name", sortDir]);
+    } else {
+      order.push([[sortableFields[sortParam], sortDirParam]]);
     }
 
     // Include
@@ -449,29 +422,28 @@ const searchOrder = async (params, req) => {
         required: false,
         model: Shift,
         as: "shiftDetail",
-        attributes: ["name", "id"]
+        attributes: ["name", "id"],
       },
       {
         model: User,
         as: "ownerDetail",
-        attributes: ["name", "last_name", "media_url","id"]
+        attributes: ["name", "last_name", "media_url", "id"],
       },
       {
         model: User,
         as: "user",
         attributes: ["name"],
-
       },
       {
         model: account,
         as: "accountDetail",
-        attributes: ["name"],
+        attributes: ["name", "id"],
       },
       {
         required: false,
         model: statusModel,
         as: "statusDetail",
-        attributes: ["name", "color_code", "id", "allow_edit", "group"]
+        attributes: ["name", "color_code", "id", "allow_edit", "group"],
       },
       {
         model: OrderType,
@@ -484,7 +456,6 @@ const searchOrder = async (params, req) => {
       include,
     };
 
-
     if (validator.isEmpty(pagination)) {
       pagination = true;
     }
@@ -495,20 +466,27 @@ const searchOrder = async (params, req) => {
       }
     }
 
-
-
     let filterParams = {
       companyId: companyId,
-      startDate: (date?.startDate && date) ? date?.startDate : start_date ? DateTime.toGMT(start_date, timeZone) : "",
-      endDate: (date?.endDate && date) ? date?.endDate : end_date ? DateTime.toGMT(end_date, timeZone) : "",
+      startDate:
+        date?.startDate && date
+          ? date?.startDate
+          : start_date
+          ? DateTime.toGMT(start_date, timeZone)
+          : "",
+      endDate:
+        date?.endDate && date
+          ? date?.endDate
+          : end_date
+          ? DateTime.toGMT(end_date, timeZone)
+          : "",
       location: location,
       status: status,
       shift: where?.shift,
       paymentType: paymentType,
-      type: type,
       searchTerm: searchTerm,
-      timeZone: timeZone
-    }
+      timeZone: timeZone,
+    };
     if (!hasOrderManageOthersPermission) {
       let userId = req && req.user && req.user.id;
       if (userId) {
@@ -516,7 +494,7 @@ const searchOrder = async (params, req) => {
       }
     } else {
       if (user) {
-        filterParams.user = user
+        filterParams.user = user;
       }
     }
 
@@ -531,73 +509,98 @@ const searchOrder = async (params, req) => {
     if (orders.count === 0) {
       return [];
     }
-    let accountArray = [];
-
-
-
-    let customerDetails = await account.findAll({
-      where: { company_id: companyId },
-      attributes: ["name", "id"],
-    });
-
-    if (customerDetails && customerDetails.length > 0) {
-      for (let i = 0; i < customerDetails.length; i++) {
-        accountArray.push({ name: customerDetails[i].name, id: customerDetails[i].id });
-      }
-    }
-
 
     const orderData = [];
     const ordersRows = orders.rows; // Store the rows in a separate variable for better performance
 
-    let customerData = ""
-
     for (let i = 0; i < ordersRows.length; i++) {
       let ownerName = "";
       if (ordersRows[i] && ordersRows[i].ownerDetail) {
-        ownerName = ordersRows[i].ownerDetail?.name + " " + ordersRows[i].ownerDetail?.last_name;
+        ownerName =
+          ordersRows[i].ownerDetail?.name +
+          " " +
+          ordersRows[i].ownerDetail?.last_name;
       }
       const orderDetails = { ...ordersRows[i].get() };
-      customerData = accountArray.find(value => value.id == orderDetails.customer_account)
-      orderDetails.createdAt = ordersRows[i].createdAt, dateTime.formats.shortDateAndTime
-      orderDetails.updatedAt = ordersRows[i].updatedAt, dateTime.formats.shortDateAndTime
-      orderDetails.date = DateTime.getDateTimeByUserProfileTimezone(orderDetails.date, timeZone);
+      (orderDetails.createdAt = ordersRows[i].createdAt),
+        dateTime.formats.shortDateAndTime;
+      (orderDetails.updatedAt = ordersRows[i].updatedAt),
+        dateTime.formats.shortDateAndTime;
+      orderDetails.date = orderDetails.date;
       orderDetails.total_amount = orderDetails.total_amount;
-      orderDetails.customer_account = orderDetails && orderDetails.customer_account;
+      orderDetails.customer_account =
+        orderDetails && orderDetails?.accountDetail;
       orderDetails.id = orderDetails.id;
       orderDetails.order_number = orderDetails.order_number;
-      orderDetails.status = ordersRows[i].statusDetail && ordersRows[i].statusDetail?.name;
+      orderDetails.status =
+        ordersRows[i].statusDetail && ordersRows[i].statusDetail?.name;
       orderDetails.colorCode = ordersRows[i].statusDetail?.color_code;
       orderDetails.statusValue = orderDetails.status;
       orderDetails.createdBy = orderDetails?.user?.name;
       orderDetails.locationName = orderDetails.location?.name;
+      orderDetails.customerName =
+        (orderDetails &&
+          orderDetails?.accountDetail &&
+          orderDetails?.accountDetail?.name) ||
+        "";
       orderDetails.salesExecutive = ownerName;
-      orderDetails.payment_type = orderDetails.payment_type == null ? "" : orderDetails.payment_type == Order.PAYMENT_TYPE_UPI_VALUE ? Order.PAYMENT_TYPE_UPI_TEXT : orderDetails.payment_type == Order.PAYMENT_TYPE_CASH_VALUE ? Order.PAYMENT_TYPE_CASH_TEXT : Order.PAYMENT_TYPE_MIXED_TEXT
-      orderDetails.paymentType = orderDetails.payment_type == null ? "" : orderDetails.payment_type == Order.PAYMENT_TYPE_UPI_TEXT ? Order.PAYMENT_TYPE_UPI_VALUE : orderDetails.payment_type == Order.PAYMENT_TYPE_CASH_TEXT ? Order.PAYMENT_TYPE_CASH_VALUE : Order.PAYMENT_TYPE_MIXED_VALUE;
-      orderDetails.customerName = customerData && customerData?.name;
-      orderDetails.shift = orderDetails.shiftDetail && orderDetails.shiftDetail.name;
-      orderDetails.salesExecutiveFirstName = ordersRows[i].ownerDetail?.name,
-        orderDetails.salesExecutiveSecondName = ordersRows[i].ownerDetail?.last_name,
-        orderDetails.salesExecutiveMediaUrl = ordersRows[i].ownerDetail?.media_url,
-        orderDetails.total_cgst_amount = orderDetails.total_cgst_amount
-      orderDetails.total_sgst_amount = orderDetails.total_sgst_amount
-      orderDetails.cash_amount = orderDetails.cash_amount
-      orderDetails.upi_amount = orderDetails.upi_amount
-      orderDetails.type =ordersRows[i].orderTypeDetail && ordersRows[i].orderTypeDetail,
-      orderDetails.allow_store_order = ordersRows[i].orderTypeDetail && ordersRows[i].orderTypeDetail?.allow_store_order,
-      orderDetails.allow_delivery = ordersRows[i].orderTypeDetail && ordersRows[i].orderTypeDetail?.allow_delivery,
-      orderDetails.allow_customer_selection = ordersRows[i].orderTypeDetail && ordersRows[i].orderTypeDetail?.show_customer_selection,
-      orderDetails.upi_payment_verified = orderDetails?.upi_payment_verified,
-        orderDetails.owner = orderDetails.owner;
-      orderDetails.owner_firstName = ordersRows[i].ownerDetail && ordersRows[i].ownerDetail?.name ? ordersRows[i].ownerDetail?.name : "";
-      orderDetails.owner_lastName = ordersRows[i].ownerDetail && ordersRows[i].ownerDetail?.last_name ? ordersRows[i].ownerDetail?.last_name : "";
-      orderDetails.owner_media_url = ordersRows[i].ownerDetail?.media_url ? ordersRows[i].ownerDetail?.media_url : "";
-      orderDetails.customer_account = orderDetails?.accountDetail?.name;
+      orderDetails.payment_type =
+        orderDetails.payment_type == null
+          ? ""
+          : orderDetails.payment_type == Order.PAYMENT_TYPE_UPI_VALUE
+          ? Order.PAYMENT_TYPE_UPI_TEXT
+          : orderDetails.payment_type == Order.PAYMENT_TYPE_CASH_VALUE
+          ? Order.PAYMENT_TYPE_CASH_TEXT
+          : Order.PAYMENT_TYPE_MIXED_TEXT;
+      orderDetails.paymentType =
+        orderDetails.payment_type == null
+          ? ""
+          : orderDetails.payment_type == Order.PAYMENT_TYPE_UPI_TEXT
+          ? Order.PAYMENT_TYPE_UPI_VALUE
+          : orderDetails.payment_type == Order.PAYMENT_TYPE_CASH_TEXT
+          ? Order.PAYMENT_TYPE_CASH_VALUE
+          : Order.PAYMENT_TYPE_MIXED_VALUE;
+      orderDetails.shift =
+        orderDetails.shiftDetail && orderDetails.shiftDetail.name;
+      (orderDetails.salesExecutiveFirstName = ordersRows[i].ownerDetail?.name),
+        (orderDetails.salesExecutiveSecondName =
+          ordersRows[i].ownerDetail?.last_name),
+        (orderDetails.salesExecutiveMediaUrl =
+          ordersRows[i].ownerDetail?.media_url),
+        (orderDetails.total_cgst_amount = orderDetails.total_cgst_amount);
+      orderDetails.total_sgst_amount = orderDetails.total_sgst_amount;
+      orderDetails.cash_amount = orderDetails.cash_amount;
+      orderDetails.upi_amount = orderDetails.upi_amount;
+      (orderDetails.type =
+        ordersRows[i].orderTypeDetail && ordersRows[i].orderTypeDetail),
+        (orderDetails.allow_store_order =
+          ordersRows[i].orderTypeDetail &&
+          ordersRows[i].orderTypeDetail?.allow_store_order),
+        (orderDetails.allow_delivery =
+          ordersRows[i].orderTypeDetail &&
+          ordersRows[i].orderTypeDetail?.allow_delivery),
+        (orderDetails.allow_customer_selection =
+          ordersRows[i].orderTypeDetail &&
+          ordersRows[i].orderTypeDetail?.show_customer_selection),
+        (orderDetails.upi_payment_verified =
+          orderDetails?.upi_payment_verified),
+        (orderDetails.owner = orderDetails.owner);
+      orderDetails.owner_firstName =
+        ordersRows[i].ownerDetail && ordersRows[i].ownerDetail?.name
+          ? ordersRows[i].ownerDetail?.name
+          : "";
+      orderDetails.owner_lastName =
+        ordersRows[i].ownerDetail && ordersRows[i].ownerDetail?.last_name
+          ? ordersRows[i].ownerDetail?.last_name
+          : "";
+      orderDetails.owner_media_url = ordersRows[i].ownerDetail?.media_url
+        ? ordersRows[i].ownerDetail?.media_url
+        : "";
       orderData.push(orderDetails);
-    };
+    }
 
     if (showTotalAmount && !orderDate) {
-      let lastReCord = ObjectHelper.createEmptyRecord(orderData[0])
+      let lastReCord = ObjectHelper.createEmptyRecord(orderData[0]);
       lastReCord.cash_amount = totalAmount?.totalCashAmount || "";
       lastReCord.upi_amount = totalAmount?.totalUpiAmount || "";
       lastReCord.total_amount = totalAmount?.totalAmount || "";
@@ -616,11 +619,11 @@ const searchOrder = async (params, req) => {
     };
 
     if (showTotalAmount) {
-      responseData.totalAmount = totalAmount && totalAmount?.totalAmount,
-        responseData.totalUpi = totalAmount && totalAmount?.totalUpiAmount,
-        responseData.totalCash = totalAmount && totalAmount?.totalCashAmount,
-        responseData.totalDraftAmount = totalAmount && totalAmount?.totalDraftAmount
-
+      (responseData.totalAmount = totalAmount && totalAmount?.totalAmount),
+        (responseData.totalUpi = totalAmount && totalAmount?.totalUpiAmount),
+        (responseData.totalCash = totalAmount && totalAmount?.totalCashAmount),
+        (responseData.totalDraftAmount =
+          totalAmount && totalAmount?.totalDraftAmount);
     }
     return responseData;
   } catch (err) {
@@ -636,7 +639,6 @@ const searchOrder = async (params, req) => {
  */
 const isExistById = async (orderId) => {
   try {
-
     if (!orderId) {
       throw { message: "Order id is required" };
     }
@@ -648,7 +650,6 @@ const isExistById = async (orderId) => {
     }
 
     return orderDetails;
-
   } catch (err) {
     console.log(err);
   }
@@ -685,7 +686,7 @@ const getOrdersById = async (orderId, company_id) => {
           required: false,
           model: OrderType,
           as: "orderTypeDetail",
-          attributes: ["name", "show_customer_selection"]
+          attributes: ["name", "show_customer_selection"],
         },
       ],
     });
@@ -723,9 +724,15 @@ const getTotalAmount = async (params) => {
   try {
     let where = {};
 
-    let statusDetail = await statusService.Get(ObjectName.ORDER_TYPE, Status.GROUP_CANCELLED, companyId);
+    let statusDetail = await statusService.Get(
+      ObjectName.ORDER_TYPE,
+      Status.GROUP_CANCELLED,
+      companyId
+    );
 
-    where.status = { [Op.ne]: statusDetail?.id }
+    if (statusDetail && statusDetail?.id) {
+      where.status = { [Op.ne]: statusDetail?.id };
+    }
 
     where.company_id = companyId;
 
@@ -734,16 +741,16 @@ const getTotalAmount = async (params) => {
     }
 
     if (orderId) {
-      where.id = orderId
+      where.id = orderId;
     }
 
     if (startDate && endDate) {
       where.date = {
         [Op.and]: {
-          [Op.gte]: DateTime.toGMT(startDate, timeZone),
-          [Op.lte]: DateTime.toGMT(endDate, timeZone),
+          [Op.gte]: startDate,
+          [Op.lte]: endDate,
         },
-      }
+      };
     }
 
     const query = {
@@ -751,7 +758,10 @@ const getTotalAmount = async (params) => {
         {
           model: Location,
           as: "location",
-          where: { status: location.STATUS_ACTIVE, allow_sale: location.ENABLED },
+          where: {
+            status: location.STATUS_ACTIVE,
+            allow_sale: location.ENABLED,
+          },
         },
       ],
       where: where,
@@ -767,22 +777,26 @@ const getTotalAmount = async (params) => {
     }
 
     return {
-      amount: total
-    }
+      amount: total,
+    };
   } catch (err) {
     console.log(err);
   }
-
-}
+};
 
 const getOrderAmountByShift = async (params) => {
-  let { startDate, endDate, userId, companyId, shift, timeZone, storeId } = params;
+  let { startDate, endDate, userId, companyId, shift, timeZone, storeId } =
+    params;
   try {
     let where = {};
 
-    let statusDetail = await statusService.Get(ObjectName.ORDER_TYPE, Status.GROUP_CANCELLED, companyId);
-    if(Number.isNotNull(statusDetail)){
-      where.status = { [Op.ne]: statusDetail?.id }
+    let statusDetail = await statusService.Get(
+      ObjectName.ORDER_TYPE,
+      Status.GROUP_CANCELLED,
+      companyId
+    );
+    if (Number.isNotNull(statusDetail)) {
+      where.status = { [Op.ne]: statusDetail?.id };
     }
 
     where.company_id = companyId;
@@ -792,11 +806,11 @@ const getOrderAmountByShift = async (params) => {
     }
 
     if (shift) {
-      where.shift = shift
+      where.shift = shift;
     }
 
     if (storeId) {
-      where.store_id = storeId
+      where.store_id = storeId;
     }
 
     if (startDate && endDate) {
@@ -805,30 +819,33 @@ const getOrderAmountByShift = async (params) => {
           [Op.gte]: DateTime.toGMT(startDate, timeZone),
           [Op.lte]: DateTime.toGMT(endDate, timeZone),
         },
-      }
+      };
     }
     const query = {
       where: where,
       attributes: [
-        'status',
-        [Sequelize.fn('SUM', Sequelize.col('total_amount')), 'total_amount'],
-        [Sequelize.fn('MAX', Sequelize.col('order.id')), 'id'],
-        [Sequelize.fn('SUM', Sequelize.col('cash_amount')), 'total_cash_amount'],
-        [Sequelize.fn('SUM', Sequelize.col('upi_amount')), 'total_upi_amount']
+        "status",
+        [Sequelize.fn("SUM", Sequelize.col("total_amount")), "total_amount"],
+        [Sequelize.fn("MAX", Sequelize.col("order.id")), "id"],
+        [
+          Sequelize.fn("SUM", Sequelize.col("cash_amount")),
+          "total_cash_amount",
+        ],
+        [Sequelize.fn("SUM", Sequelize.col("upi_amount")), "total_upi_amount"],
       ],
-      group: ['order.status']
+      group: ["order.status"],
     };
 
     let orderDetails = await orderModel.findAll(query);
     if (orderDetails && orderDetails.length > 0) {
-      return orderDetails.map(order => ({
+      return orderDetails.map((order) => ({
         status: order.status,
-        total_amount: order.get('total_amount'),
-        total_cash_amount: order.get('total_cash_amount'),
-        total_upi_amount: order.get('total_upi_amount'),
+        total_amount: order.get("total_amount"),
+        total_cash_amount: order.get("total_cash_amount"),
+        total_upi_amount: order.get("total_upi_amount"),
       }));
     } else {
-      return []
+      return [];
     }
   } catch (err) {
     console.log(err);
@@ -842,17 +859,20 @@ const create = async (data) => {
     }
 
     let response = await orderModel.create(data);
-    return response
+    return response;
   } catch (err) {
     console.log(err);
   }
-}
+};
 
 const updateQuantity = async (orderId, companyId) => {
   try {
-
     //get the draft status Id
-    let draftStatus = await statusService.Get(ObjectName.ORDER_PRODUCT, Status.GROUP_DRAFT, companyId)
+    let draftStatus = await statusService.Get(
+      ObjectName.ORDER_PRODUCT,
+      Status.GROUP_DRAFT,
+      companyId
+    );
 
     //out of stock list array
     let outOfStockProductList = new Array();
@@ -860,7 +880,7 @@ const updateQuantity = async (orderId, companyId) => {
     //order product where
     let orderproductWhere = new Object();
 
-    //append the order id 
+    //append the order id
     orderproductWhere.order_id = orderId;
 
     //append the company_id
@@ -872,81 +892,95 @@ const updateQuantity = async (orderId, companyId) => {
     }
 
     //get the order product list
-    let orderproductList = await orderProduct.findAll(({
+    let orderproductList = await orderProduct.findAll({
       where: orderproductWhere,
       include: [
         {
           model: productIndex,
           as: "productIndex",
-          required: true
-
+          required: true,
         },
-      ]
-    }))
+      ],
+    });
 
     //validate order product list exist
     if (orderproductList && orderproductList.length > 0) {
-
       //loop the order product list
       for (let i = 0; i < orderproductList.length; i++) {
-
         //destrcture the order product
-        const { quantity, product_id, store_id, productIndex } = orderproductList[i];
+        const { quantity, product_id, store_id, productIndex } =
+          orderproductList[i];
 
-        //get location product 
+        //get location product
         let isStoreProductExist = await storeProduct.findOne({
-          where: { store_id: store_id, product_id: product_id }
-        })
+          where: { store_id: store_id, product_id: product_id },
+        });
 
         //validate location product exist or not
         if (isStoreProductExist) {
-
           //destrcuture the location product
-          const { quantity: storeProductQuantity, id, order_quantity } = isStoreProductExist;
+          const {
+            quantity: storeProductQuantity,
+            id,
+            order_quantity,
+          } = isStoreProductExist;
 
           //validate quantity availability
-          if (storeProductQuantity >= quantity || productIndex.allow_sell_out_of_stock == Product.PRODUCT_SELL_OUT_OF_STOCK_POLICY_CONTINUE_VALUE) {
-
+          if (
+            storeProductQuantity >= quantity ||
+            productIndex.allow_sell_out_of_stock ==
+              Product.PRODUCT_SELL_OUT_OF_STOCK_POLICY_CONTINUE_VALUE
+          ) {
             //get the updated quantity
             let updateQuantity = storeProductQuantity - quantity;
 
             //get the updated order quantity
-            let updatedOrderQuantity = order_quantity ? Number.GetFloat(order_quantity) + Number.GetFloat(quantity) : quantity;
+            let updatedOrderQuantity = order_quantity
+              ? Number.GetFloat(order_quantity) + Number.GetFloat(quantity)
+              : quantity;
 
             //update the location product
-            await storeProduct.update({ quantity: updateQuantity, order_quantity: updatedOrderQuantity, last_order_date: new Date() }, {
-              where: { store_id: store_id, product_id: product_id }
-            })
+            await storeProduct.update(
+              {
+                quantity: updateQuantity,
+                order_quantity: updatedOrderQuantity,
+                last_order_date: new Date(),
+              },
+              {
+                where: { store_id: store_id, product_id: product_id },
+              }
+            );
           } else {
             outOfStockProductList.push({
               product_id: product_id,
               availableQuantity: storeProductQuantity,
               currentQuantity: quantity,
-              storeproductId: id
-            })
+              storeproductId: id,
+            });
           }
         }
-
       }
     }
 
     return outOfStockProductList;
-
   } catch (err) {
     console.log(err);
   }
-}
+};
 
 const updateStoreProductQuantity = async (orderId, companyId) => {
   try {
-
     //get the draft status Id
-    let completedStatus = await statusService.Get(ObjectName.ORDER_PRODUCT, Status.GROUP_COMPLETED, companyId)
+    let completedStatus = await statusService.Get(
+      ObjectName.ORDER_PRODUCT,
+      Status.GROUP_COMPLETED,
+      companyId
+    );
 
     //order product where
     let orderproductWhere = new Object();
 
-    //append the order id 
+    //append the order id
     orderproductWhere.order_id = orderId;
 
     //append the company_id
@@ -958,53 +992,59 @@ const updateStoreProductQuantity = async (orderId, companyId) => {
     }
 
     //get the order product list
-    let orderproductList = await orderProduct.findAll(({
+    let orderproductList = await orderProduct.findAll({
       where: orderproductWhere,
-    }))
+    });
 
     //validate order product list exist
     if (orderproductList && orderproductList.length > 0) {
-
       //loop the order product list
       for (let i = 0; i < orderproductList.length; i++) {
-
         //destrcture the order product
         const { quantity, product_id, store_id } = orderproductList[i];
 
-        //get location product 
+        //get location product
         let isStoreProductExist = await storeProduct.findOne({
-          where: { store_id: store_id, product_id: product_id }
-        })
+          where: { store_id: store_id, product_id: product_id },
+        });
 
         //validate location product exist or not
         if (isStoreProductExist) {
-
           //destrcuture the location product
-          const { quantity: storeProductQuantity, id, order_quantity } = isStoreProductExist;
+          const {
+            quantity: storeProductQuantity,
+            id,
+            order_quantity,
+          } = isStoreProductExist;
 
           //validate quantity availability
           if (storeProductQuantity >= quantity) {
-
             //get the updated quantity
             let updateQuantity = storeProductQuantity + quantity;
 
             //get the updated order quantity
-            let updatedOrderQuantity = order_quantity ? Number.Subtraction(order_quantity, quantity) : quantity;
+            let updatedOrderQuantity = order_quantity
+              ? Number.Subtraction(order_quantity, quantity)
+              : quantity;
 
             //update the location product
-            await storeProduct.update({ quantity: updateQuantity, order_quantity: updatedOrderQuantity }, {
-              where: { store_id: store_id, product_id: product_id, id: id }
-            })
+            await storeProduct.update(
+              {
+                quantity: updateQuantity,
+                order_quantity: updatedOrderQuantity,
+              },
+              {
+                where: { store_id: store_id, product_id: product_id, id: id },
+              }
+            );
           }
         }
-
       }
     }
-
   } catch (err) {
     console.log(err);
   }
-}
+};
 
 const update = async (req, res, next) => {
   const { orderId } = req.params;
@@ -1013,17 +1053,25 @@ const update = async (req, res, next) => {
     //get body data
     const data = req.body;
     //get order Id
-    const hasPermission = await Permission.GetValueByName(Permission.ORDER_MANAGE_OTHERS, req.role_permission);
+    const hasPermission = await Permission.GetValueByName(
+      Permission.ORDER_MANAGE_OTHERS,
+      req.role_permission
+    );
 
     if (!Number.isNotNull(orderId)) {
-      return res.json(BAD_REQUEST, { message: "Order Id Required" })
+      return res.json(BAD_REQUEST, { message: "Order Id Required" });
     }
 
     //get companyId
     const companyId = Request.GetCompanyId(req);
-    let getOrderDetail = await getOrdersById(orderId, companyId)
+    let getOrderDetail = await getOrdersById(orderId, companyId);
 
-    const status = await statusService.Get(ObjectName.ORDER_TYPE, Status.GROUP_CANCELLED, companyId, { object_id: getOrderDetail?.type });
+    const status = await statusService.Get(
+      ObjectName.ORDER_TYPE,
+      Status.GROUP_CANCELLED,
+      companyId,
+      { object_id: getOrderDetail?.type }
+    );
 
     //define out of stocks array
     let outofStockProducts = new Array();
@@ -1035,13 +1083,31 @@ const update = async (req, res, next) => {
     //validate date exist or not
     if (data?.date) {
       updateData.date = data.date;
-      historyMessage.push(`Order Date Changed to ${DateTime.getDateTimeByUserProfileTimezone(data.date, await Request.getTimeZone())}\n`);
+      historyMessage.push(
+        `Order Date Changed to ${DateTime.getDateTimeByUserProfileTimezone(
+          data.date,
+          await Request.getTimeZone()
+        )}\n`
+      );
+    }
+
+    if (data?.delivery_date) {
+      updateData.delivery_date = data.delivery_date;
+      historyMessage.push(
+        `Order Delivery Date Changed to ${DateTime.getDateTimeByUserProfileTimezone(
+          data.delivery_date,
+          await Request.getTimeZone()
+        )}\n`
+      );
     }
     //validate location od exist or not
     if (Number.isNotNull(data?.storeId)) {
       if (Number.Get(data?.storeId) !== Number.Get(getOrderDetail?.store_id)) {
         updateData.store_id = data.storeId;
-        let location = await locationService.getLocationDetails(data.storeId, companyId)
+        let location = await locationService.getLocationDetails(
+          data.storeId,
+          companyId
+        );
         historyMessage.push(`Order Location Changed to ${location?.name}\n`);
       }
     }
@@ -1050,31 +1116,50 @@ const update = async (req, res, next) => {
     if (Number.isNotNull(data?.shift)) {
       if (Number.Get(data?.shift) !== Number.Get(getOrderDetail?.shift)) {
         updateData.shift = data.shift;
-        let shiftData = await ShiftService.getShiftById(data?.shift, companyId)
+        let shiftData = await ShiftService.getShiftById(data?.shift, companyId);
         historyMessage.push(`Order Shift Changed to ${shiftData?.name}\n`);
       }
     }
     if (data?.cash || data?.cash == "") {
       updateData.cash_amount = data?.cash ? data?.cash : null;
-      historyMessage.push(`Order Cash Amount Changed to ${Currency.GetFormattedCurrency(data?.cash)}\n`);
+      historyMessage.push(
+        `Order Cash Amount Changed to ${Currency.GetFormattedCurrency(
+          data?.cash
+        )}\n`
+      );
     }
     if (data?.upi || data?.upi == "") {
       updateData.upi_amount = data?.upi ? data?.upi : null;
-      historyMessage.push(`Order Upi Amount Changed to ${Currency.GetFormattedCurrency(data?.upi)}\n`);
+      historyMessage.push(
+        `Order Upi Amount Changed to ${Currency.GetFormattedCurrency(
+          data?.upi
+        )}\n`
+      );
     }
     if (Number.isNotNull(data?.delivery_executive)) {
       updateData.delivery_executive = data?.delivery_executive;
-      updateData.owner = data.delivery_executive
+      updateData.owner = data.delivery_executive;
 
-      if (Number.Get(updateData.delivery_executive) !== Number.Get(getOrderDetail?.delivery_executive)) {
-        let userData = await UserService.get(data.delivery_executive, companyId)
-        historyMessage.push(`Delivery Executive Changed to ${userData?.name}\n`);
+      if (
+        Number.Get(updateData.delivery_executive) !==
+        Number.Get(getOrderDetail?.delivery_executive)
+      ) {
+        let userData = await UserService.get(
+          data.delivery_executive,
+          companyId
+        );
+        historyMessage.push(
+          `Delivery Executive Changed to ${userData?.name}\n`
+        );
       }
     }
 
     if (Number.isNotNull(data?.customer_account)) {
       updateData.customer_account = data.customer_account;
-      let accountData = await AccountService.get(data.customer_account, companyId);
+      let accountData = await AccountService.get(
+        data.customer_account,
+        companyId
+      );
       historyMessage.push(`Customer Account Changed to ${accountData?.name}\n`);
     }
     if (Number.isNotNull(data?.status)) {
@@ -1086,21 +1171,22 @@ const update = async (req, res, next) => {
 
         historyMessage.push(`Order Status Changed to ${statusDetail?.name}\n`);
         //validate completed status exist or not
-        if (statusDetail && statusDetail.update_quantity == Status.UPDATE_QUANTITY_ENABLED) {
-
+        if (
+          statusDetail &&
+          statusDetail.update_quantity == Status.UPDATE_QUANTITY_ENABLED
+        ) {
           //update quantity in location product table
           outofStockProducts = await updateQuantity(orderId, companyId);
 
           //validate out of stock product exist or not
           if (outofStockProducts && outofStockProducts.length > 0) {
-
             //create system log
             historyMessage.push(`Out Of Stock" \n`);
 
             //return the response
             return res.json(BAD_REQUEST, {
               message: "Out Of Stock",
-              outofStockProducts: outofStockProducts
+              outofStockProducts: outofStockProducts,
             });
           }
         }
@@ -1110,28 +1196,37 @@ const update = async (req, res, next) => {
     //validate payment type exist or not
     if (Number.isNotNull(data?.payment_type)) {
       updateData.payment_type = data.payment_type;
-      let paymentType = orderPaymentTypeOptions.find(value => value.value == data.payment_type)
+      let paymentType = orderPaymentTypeOptions.find(
+        (value) => value.value == data.payment_type
+      );
 
-      historyMessage.push(`Order Payment Type Changed to ${paymentType?.label}\n`);
-
+      historyMessage.push(
+        `Order Payment Type Changed to ${paymentType?.label}\n`
+      );
     }
 
- //validat sales executive userid exist or not
- if (Number.isNotNull(data?.sales_executive_user_id)) {
-  if (Number.Get(data.sales_executive_user_id) !== Number.Get(getOrderDetail?.sales_executive_user_id)) {
-    updateData.sales_executive_user_id = data.sales_executive_user_id
-    updateData.owner = data.sales_executive_user_id
+    //validat sales executive userid exist or not
+    if (Number.isNotNull(data?.sales_executive_user_id)) {
+      if (
+        Number.Get(data.sales_executive_user_id) !==
+        Number.Get(getOrderDetail?.sales_executive_user_id)
+      ) {
+        updateData.sales_executive_user_id = data.sales_executive_user_id;
+        updateData.owner = data.sales_executive_user_id;
 
-    let userData = await UserService.get(data.sales_executive_user_id, companyId)
+        let userData = await UserService.get(
+          data.sales_executive_user_id,
+          companyId
+        );
 
-    historyMessage.push(`Sales Executive Changed to ${userData?.name}\n`);
-  }
-}
+        historyMessage.push(`Sales Executive Changed to ${userData?.name}\n`);
+      }
+    }
     if (Number.isNotNull(data?.owner)) {
       if (Number.Get(data.owner) !== Number.Get(getOrderDetail?.owner)) {
-        updateData.owner = data.owner
+        updateData.owner = data.owner;
 
-        let userData = await UserService.get(data.owner, companyId)
+        let userData = await UserService.get(data.owner, companyId);
 
         historyMessage.push(`Owner Changed to ${userData?.name}\n`);
       }
@@ -1139,42 +1234,57 @@ const update = async (req, res, next) => {
 
     if (Number.isNotNull(data?.type)) {
       if (Number.Get(data.type) !== Number.Get(getOrderDetail?.type)) {
-        updateData.type = data.type
-        let response =  await OrderTypeService.get(data?.type, companyId);
+        updateData.type = data.type;
+        let response = await OrderTypeService.get(data?.type, companyId);
         historyMessage.push(`Type Changed to ${response?.name}\n`);
       }
     }
 
     //validaet total amount exsit or not
     if (data?.total_amount >= 0) {
-      updateData.total_amount = data.total_amount
-      historyMessage.push(`Order Total Amount Changed to ${data.total_amount}\n`);
-
-    }    //updaet the order
+      updateData.total_amount = data.total_amount;
+      historyMessage.push(
+        `Order Total Amount Changed to ${data.total_amount}\n`
+      );
+    } //updaet the order
 
     if (status?.allow_cancel !== Status.ALLOW_CANCEL || hasPermission) {
-
       let orderDetail = await orderModel.update(updateData, {
         where: {
-          id: orderId, company_id: companyId,
+          id: orderId,
+          company_id: companyId,
         },
         returning: true,
         plain: true,
       });
 
       if (orderDetail) {
-
         if (data?.storeId) {
-          await orderProductService.updateOrderProductByOrderUpdate(orderId, companyId, "store_id", "store_id");
-          await locationProductService.updateStoreProductQtyIncreseDecreaseById(orderId, data.storeId, getOrderDetail?.store_id, companyId)
+          await orderProductService.updateOrderProductByOrderUpdate(
+            orderId,
+            companyId,
+            "store_id",
+            "store_id"
+          );
+          await locationProductService.updateStoreProductQtyIncreseDecreaseById(
+            orderId,
+            data.storeId,
+            getOrderDetail?.store_id,
+            companyId
+          );
         }
 
         if (data?.date) {
-          await orderProductService.updateOrderProductByOrderUpdate(orderId, companyId, "date", "order_date");
+          await orderProductService.updateOrderProductByOrderUpdate(
+            orderId,
+            companyId,
+            "date",
+            "order_date"
+          );
         }
 
         if (data?.status) {
-          orderProductService.updateStatus(orderId, companyId, data.status)
+          orderProductService.updateStatus(orderId, companyId, data.status);
         }
       }
 
@@ -1188,15 +1298,16 @@ const update = async (req, res, next) => {
           let message = historyMessage.join();
           History.create(`${message}`, req, ObjectName.ORDER, orderId);
         }
-        if(Number.isNotNull(data?.status))
-      {
-        const status = await statusService.getData(data?.status,companyId);
-      if(status && status?.notify_to_owner == Status.NOTIFY_TO_OWNER_ENABLED){
-
-      orderDetail.timeZone = Request.getTimeZone(req)
-      await sendOrderSlackNotification(getOrderDetail,status?.name)
-    }}
-    
+        if (Number.isNotNull(data?.status)) {
+          const status = await statusService.getData(data?.status, companyId);
+          if (
+            status &&
+            status?.notify_to_owner == Status.NOTIFY_TO_OWNER_ENABLED
+          ) {
+            orderDetail.timeZone = Request.getTimeZone(req);
+            await sendOrderSlackNotification(getOrderDetail, status?.name);
+          }
+        }
       });
     } else {
       res.json(BAD_REQUEST, {
@@ -1206,11 +1317,10 @@ const update = async (req, res, next) => {
   } catch (err) {
     console.log(err);
     res.json(BAD_REQUEST, {
-      message: err.message
+      message: err.message,
     });
   }
 };
-
 
 const get = async (req, res, next) => {
   const { id } = req.params;
@@ -1222,12 +1332,27 @@ const get = async (req, res, next) => {
   try {
     let orderDetails = await getOrdersById(id, company_id);
     orderDetails = orderDetails.toJSON();
-    let orderDate = DateTime.getDateTimeByUserProfileTimezone(orderDetails.date, timeZone);
+    let orderDate = DateTime.getDateTimeByUserProfileTimezone(
+      orderDetails.date,
+      timeZone
+    );
     orderDetails.date = orderDate;
-    const orderProducts = await orderProductService.getAllOrderProductByOrderId(id);
+
+    let orderDeliveryDate = DateTime.getDateTimeByUserProfileTimezone(
+      orderDetails.delivery_date,
+      timeZone
+    );
+    orderDetails.delivery_date = orderDeliveryDate;
+
+    const orderProducts = await orderProductService.getAllOrderProductByOrderId(
+      id
+    );
     const productDetails = [];
     for (let index = 0; index < orderProducts.rows.length; index++) {
-      const product = await ProductService.getProductDetailsById(orderProducts.rows[index].product_id, company_id);
+      const product = await ProductService.getProductDetailsById(
+        orderProducts.rows[index].product_id,
+        company_id
+      );
       product.quantity = orderProducts.rows[index]?.quantity;
       product.price = orderProducts.rows[index]?.price;
       product.unit_price = orderProducts.rows[index]?.unit_price;
@@ -1236,12 +1361,18 @@ const get = async (req, res, next) => {
       product.productId = orderProducts.rows[index]?.product_id;
       product.BrandName = product.productBrandName;
       productDetails.push(product);
-
     }
     if (orderDetails.store_id)
-      locationDetails = await locationService.isExistById(orderDetails.store_id)
+      locationDetails = await locationService.isExistById(
+        orderDetails.store_id
+      );
     // API response
-    res.json(OK, { data: orderDetails, orderProducts: orderProducts, productDetails: productDetails, locationDetails: locationDetails ? locationDetails : "" });
+    res.json(OK, {
+      data: orderDetails,
+      orderProducts: orderProducts,
+      productDetails: productDetails,
+      locationDetails: locationDetails ? locationDetails : "",
+    });
   } catch (err) {
     console.log(err);
     res.json(BAD_REQUEST, { message: err.message });
@@ -1253,7 +1384,11 @@ const getDraftCount = async (req, res, next) => {
     const companyId = Request.GetCompanyId(req);
     const userId = Request.getUserId(req);
     const { isCustomerRequest } = req.query;
-    let status = await statusService.Get(ObjectName.ORDER_TYPE, Status.GROUP_DRAFT, companyId);
+    let status = await statusService.Get(
+      ObjectName.ORDER_TYPE,
+      Status.GROUP_DRAFT,
+      companyId
+    );
     let whereObj = { company_id: companyId, status: status?.id };
     if (isCustomerRequest) {
       whereObj.createdBy = userId;
@@ -1264,15 +1399,11 @@ const getDraftCount = async (req, res, next) => {
       where: whereObj,
     });
     res.json(OK, { draftCount: draftCount.length, draftCountList: draftCount });
-
   } catch (err) {
     console.log(err);
     res.json(BAD_REQUEST, { message: err.message });
-
   }
-
-
-}
+};
 const orderCount = async (params, group, hasPermission) => {
   try {
     let {
@@ -1288,10 +1419,10 @@ const orderCount = async (params, group, hasPermission) => {
       userId,
       user,
       status,
-      timeZone
+      timeZone,
     } = params;
-    let start_date = DateTime.toGetISOStringWithDayStartTime(startDate)
-    let end_date = DateTime.toGetISOStringWithDayEndTime(endDate)
+    let start_date = DateTime.toGetISOStringWithDayStartTime(startDate);
+    let end_date = DateTime.toGetISOStringWithDayEndTime(endDate);
 
     const data = params;
     let where = {};
@@ -1321,10 +1452,9 @@ const orderCount = async (params, group, hasPermission) => {
       where.type = type;
     }
     if (!hasPermission) {
-
-        if (userId) {
-          where.owner = userId;
-        }
+      if (userId) {
+        where.owner = userId;
+      }
     }
     if (location && parseInt(location)) {
       where.store_id = Number.Get(location);
@@ -1352,16 +1482,19 @@ const orderCount = async (params, group, hasPermission) => {
       };
     }
     if (paymentType) {
-      where.payment_type = paymentType
+      where.payment_type = paymentType;
     }
     if (group) {
-      let statusValue = await statusService.Get(ObjectName.ORDER_TYPE, group, companyId);
-      where.status = statusValue && statusValue?.id
+      let statusValue = await statusService.Get(
+        ObjectName.ORDER_TYPE,
+        group,
+        companyId
+      );
+      where.status = statusValue && statusValue?.id;
     }
 
-
     if (orderId !== undefined) {
-      where.id = orderId
+      where.id = orderId;
     }
     const searchTerm = search ? search.trim() : null;
     if (searchTerm) {
@@ -1374,7 +1507,10 @@ const orderCount = async (params, group, hasPermission) => {
           },
         ];
       }
-      if (typeof parseFloat(searchTerm) == "number" && !isNaN(parseFloat(searchTerm))) {
+      if (
+        typeof parseFloat(searchTerm) == "number" &&
+        !isNaN(parseFloat(searchTerm))
+      ) {
         where[Op.or] = [
           {
             order_number: {
@@ -1429,7 +1565,12 @@ const orderCount = async (params, group, hasPermission) => {
 };
 
 const del = async (req, res) => {
-
+  let rolePermission = Request.getRolePermission(req);
+  //validate permission exiist or not
+  const hasPermission = await Permission.GetValueByName(
+    Permission.ORDER_DELETE,
+    rolePermission
+  );
 
   try {
     //get company Id from request
@@ -1444,21 +1585,22 @@ const del = async (req, res) => {
     }
 
     //delete Order
-    await orderService.delete({ where: { id: orderId, company_id: companyId } });
+    await orderService.delete({
+      where: { id: orderId, company_id: companyId },
+    });
 
     await orderProductService.deleteByOrderId(orderId, companyId);
 
     res.on("finish", async () => {
       History.create("Order Deleted", req, ObjectName.ORDER, orderId);
-    })
+    });
 
     res.json(200, { message: "Order Deleted Successfully" });
-
   } catch (err) {
     console.log(err);
     return res.json(400, { message: err.message });
   }
-}
+};
 
 const updateDeliveryStatus = async (req, res, next) => {
   try {
@@ -1472,13 +1614,10 @@ const updateDeliveryStatus = async (req, res, next) => {
 
     let companyId = Request.GetCompanyId(req);
 
-
-
     // Update Delivery status
     let updateData = {};
 
     if (data?.status) updateData.status = data.status;
-
 
     const save = await orderService.update(updateData, {
       where: { id: id, company_id: companyId },
@@ -1490,7 +1629,12 @@ const updateDeliveryStatus = async (req, res, next) => {
 
     // Log the update in the system logs
     res.on("finish", async () => {
-      History.create(`Delivery Status updated`, req, ObjectName.DELIVERY, save.id);
+      History.create(
+        `Delivery Status updated`,
+        req,
+        ObjectName.DELIVERY,
+        save.id
+      );
     });
   } catch (err) {
     console.error(err);
@@ -1504,14 +1648,17 @@ const updateStatus = async (req, res, next) => {
   let companyId = Request.GetCompanyId(req);
 
   let data = req.body;
+  console.debug("data--------------->>>", data)
   let { id } = req.params;
+  console.debug("id--------------->>>", id)
   let company_id = Request.GetCompanyId(req);
 
-  const orderDetails = await orderService.findOne({ where: { company_id: companyId, id: id } });
-
+  const orderDetails = await orderService.findOne({
+    where: { company_id: companyId, id: id },
+  });
 
   try {
-    if (!id) {
+    if (!id || !orderDetails) {
       return res.json(Response.BAD_REQUEST, {
         message: "Invalid Id",
       });
@@ -1526,32 +1673,15 @@ const updateStatus = async (req, res, next) => {
       },
     });
 
-    if (data?.status && orderDetails) {
-
-      let cancelledStatus = await statusService.Get(ObjectName.ORDER_TYPE, Status.GROUP_CANCELLED, companyId, { object_id: orderDetails?.type });
-
-      let completedStatus = await statusService.Get(ObjectName.ORDER_TYPE, Status.GROUP_COMPLETED, companyId, { object_id: orderDetails?.type })
-      let orderProductCancelStatus = await statusService.Get(ObjectName.ORDER_PRODUCT, Status.GROUP_CANCELLED, companyId);
-
-      if (completedStatus && cancelledStatus && orderDetails.status == completedStatus.id && data.status == cancelledStatus.id) {
-        updateStoreProductQuantity(id, companyId);
-        await orderService.update({ cancelled_at: new Date() }, { where: { id: id, company_id: companyId } });
-        await orderProductModelService.update({ status: orderProductCancelStatus && orderProductCancelStatus?.id }, { where: { order_id: id, company_id: companyId } })
-      }
-
-    }
-
-    const statusData = await statusServiceModal.findOne({ where: { company_id: company_id, id: data.status } });
+    const statusData = await statusServiceModal.findOne({
+      where: { company_id: company_id, id: data.status },
+    });
 
     // systemLog
     res.json(Response.OK, {
       message: ` Order  ${statusData?.name} Successfully`,
     });
     res.on("finish", async () => {
-      if(statusData && statusData?.notify_to_owner == Status.NOTIFY_TO_OWNER_ENABLED){
-       orderDetails.timeZone = Request.getTimeZone(req)
-        await sendOrderSlackNotification(orderDetails,statusData?.name)
-      }
       //create system log for sale updation
       History.create(
         ` Order Status Changed to ${statusData?.name} `,
@@ -1583,10 +1713,15 @@ const getBySelectedIds = async (req, res) => {
     for (let i = 0; i < selectedOrderIds.length; i++) {
       let orderId = selectedOrderIds[i];
       let orderDetails = await getOrdersById(orderId, company_id);
-      let orderProducts = await orderProductService.getAllOrderProductByOrderId(orderId);
+      let orderProducts = await orderProductService.getAllOrderProductByOrderId(
+        orderId
+      );
       let productDetails = [];
       for (let index = 0; index < orderProducts.rows.length; index++) {
-        let product = await ProductService.getProductDetailsById(orderProducts.rows[index].product_id, company_id);
+        let product = await ProductService.getProductDetailsById(
+          orderProducts.rows[index].product_id,
+          company_id
+        );
         if (product) {
           product.quantity = orderProducts.rows[index]?.quantity || null;
           product.price = orderProducts.rows[index]?.price || null;
@@ -1597,7 +1732,9 @@ const getBySelectedIds = async (req, res) => {
           product.BrandName = product.productBrandName;
           productDetails.push(product);
         } else {
-          console.log(`Product with ID ${orderProducts.rows[index].product_id} not found.`);
+          console.log(
+            `Product with ID ${orderProducts.rows[index].product_id} not found.`
+          );
         }
       }
       responseData.push({
@@ -1615,10 +1752,9 @@ const getBySelectedIds = async (req, res) => {
   }
 };
 
-
 const bulkUpdate = async (req, res, next) => {
   try {
-    const { id, date, location, shift, owner, paymentType,type } = req.params;
+    const { id, date, location, shift, owner, paymentType, type } = req.params;
 
     const { orderIds } = req.body;
 
@@ -1635,37 +1771,38 @@ const bulkUpdate = async (req, res, next) => {
     let selectedOrderIds = orderIds.split(",");
 
     if (selectedOrderIds && selectedOrderIds.length > 0) {
-
       for (let i = 0; i < selectedOrderIds.length; i++) {
+        let orderId = selectedOrderIds[i];
 
-        let orderId = selectedOrderIds[i]
-
-        let getOrderDetail = await getOrdersById(orderId, companyId)
+        let getOrderDetail = await getOrdersById(orderId, companyId);
         let updateData = {};
 
         if (date) {
-          updateData.date = date
+          updateData.date = date;
         }
         if (location) {
-          updateData.store_id = location
+          updateData.store_id = location;
         }
         if (shift) {
-          updateData.shift = shift
+          updateData.shift = shift;
         }
         if (owner) {
-          updateData.owner = owner
-
+          updateData.owner = owner;
         }
         if (type) {
-          updateData.type = type
-
+          updateData.type = type;
         }
         if (paymentType) {
-          updateData.payment_type = paymentType
+          updateData.payment_type = paymentType;
         }
 
         if (Number.isNotNull(location)) {
-          await locationProductService.updateStoreProductQtyIncreseDecreaseById(orderId, location, getOrderDetail?.store_id, companyId)
+          await locationProductService.updateStoreProductQtyIncreseDecreaseById(
+            orderId,
+            location,
+            getOrderDetail?.store_id,
+            companyId
+          );
           await orderProduct.update(
             { store_id: location },
             {
@@ -1679,7 +1816,8 @@ const bulkUpdate = async (req, res, next) => {
 
         await orderModel.update(updateData, {
           where: {
-            id: orderId, company_id: companyId,
+            id: orderId,
+            company_id: companyId,
           },
         });
       }
@@ -1690,18 +1828,16 @@ const bulkUpdate = async (req, res, next) => {
   } catch (err) {
     console.log(err);
   }
-}
-
+};
 
 const completeOrder = async (orderId, body, companyId, userId) => {
   try {
-
     if (!orderId) {
-      throw { message: "Order Id Is Required" }
+      throw { message: "Order Id Is Required" };
     }
 
     if (body && !body.payment_type) {
-      throw { message: "Payment Type Is Required" }
+      throw { message: "Payment Type Is Required" };
     }
 
     let orderDetail = await orderService.findOne({
@@ -1712,35 +1848,48 @@ const completeOrder = async (orderId, body, companyId, userId) => {
     });
 
     if (!orderDetail) {
-      throw { message: "Order Not Found" }
+      throw { message: "Order Not Found" };
     }
 
-    const orderCompletedStatus = await statusService.Get(ObjectName.ORDER_TYPE, Status.GROUP_COMPLETED, companyId, { object_id: orderDetail?.type });
+    const orderCompletedStatus = await statusService.Get(
+      ObjectName.ORDER_TYPE,
+      Status.GROUP_COMPLETED,
+      companyId,
+      { object_id: orderDetail?.type }
+    );
 
-    
-    let req = { user: {} }; 
-    
+    let req = { user: {} };
+
     req.user.company_id = companyId;
-    
-    req.user.id = userId;
-    
-    History.create(`order complete status ${orderCompletedStatus?.name} orderType : ${orderDetail?.type}`, req, ObjectName.ORDER, orderId);
 
-    let historyMessage = new Array()
+    req.user.id = userId;
+
+    History.create(
+      `order complete status ${orderCompletedStatus?.name} orderType : ${orderDetail?.type}`,
+      req,
+      ObjectName.ORDER,
+      orderId
+    );
+
+    let historyMessage = new Array();
 
     let updateData = new Object();
 
     if (!orderCompletedStatus) {
-      throw { message: "Completed Status Not Found" }
+      throw { message: "Completed Status Not Found" };
     }
 
     if (body.cash) {
       updateData.cash_amount = body.cash;
-      historyMessage.push(`Order Cash Updated To ${Currency.GetFormattedCurrency(body.cash)}\n`);
+      historyMessage.push(
+        `Order Cash Updated To ${Currency.GetFormattedCurrency(body.cash)}\n`
+      );
     }
     if (body.upi) {
       updateData.upi_amount = body.upi;
-      historyMessage.push(`Order Upi Updated To ${Currency.GetFormattedCurrency(body.upi)}\n`);
+      historyMessage.push(
+        `Order Upi Updated To ${Currency.GetFormattedCurrency(body.upi)}\n`
+      );
     }
     if (Number.isNotNull(body.customer_account)) {
       let isExist = await AccountService.get(body.customer_account, companyId);
@@ -1764,7 +1913,9 @@ const completeOrder = async (orderId, body, companyId, userId) => {
 
     if (orderDetail?.status !== orderCompletedStatus.id) {
       updateData.status = orderCompletedStatus.id;
-      historyMessage.push(`Order Status Changed to ${orderCompletedStatus?.name}\n`);
+      historyMessage.push(
+        `Order Status Changed to ${orderCompletedStatus?.name}\n`
+      );
     }
     await orderService.update(updateData, {
       where: {
@@ -1774,8 +1925,10 @@ const completeOrder = async (orderId, body, companyId, userId) => {
     });
 
     //validate completed status exist or not
-    if (orderCompletedStatus && orderCompletedStatus.update_quantity == Status.UPDATE_QUANTITY_ENABLED) {
-
+    if (
+      orderCompletedStatus &&
+      orderCompletedStatus.update_quantity == Status.UPDATE_QUANTITY_ENABLED
+    ) {
       //define out of stocks array
       let outofStockProducts = new Array();
 
@@ -1784,22 +1937,27 @@ const completeOrder = async (orderId, body, companyId, userId) => {
 
       //validate out of stock product exist or not
       if (outofStockProducts && outofStockProducts.length > 0) {
-
         historyMessage.push(`Out Of Stock \n`);
 
-        throw { message: "Out Of Stock", outofStockProducts: outofStockProducts }
+        throw {
+          message: "Out Of Stock",
+          outofStockProducts: outofStockProducts,
+        };
       }
     }
 
-    await orderProductService.updateStatus(orderId, companyId, orderCompletedStatus.id)
+    await orderProductService.updateStatus(
+      orderId,
+      companyId,
+      orderCompletedStatus.id
+    );
 
-    
-    return {orderDetail,orderCompletedStatus,historyMessage}
+    return { orderDetail, orderCompletedStatus, historyMessage };
   } catch (err) {
     console.log(err);
-    throw { message: err.message }
+    throw { message: err.message };
   }
-}
+};
 
 const getOrderGenerationNumber = async (storeId, companyId) => {
   try {
@@ -1811,12 +1969,12 @@ const getOrderGenerationNumber = async (storeId, companyId) => {
     //Company Wise
     let nextCompanyOrderNumber;
 
-    let settingData = await getSettingList(companyId)
+    let settingData = await getSettingList(companyId);
 
-    let settingList = []
+    let settingList = [];
 
     for (let i = 0; i < settingData.length; i++) {
-      settingList.push(settingData[i])
+      settingList.push(settingData[i]);
     }
 
     let orderNumberGeneration = await getValueByObject(
@@ -1824,15 +1982,20 @@ const getOrderGenerationNumber = async (storeId, companyId) => {
       settingList
     );
 
-    if (orderNumberGeneration && orderNumberGeneration === Order.ORDER_NUMBER_GENERATION_TYPE_LOCATION_WISE) {
-
+    if (
+      orderNumberGeneration &&
+      orderNumberGeneration === Order.ORDER_NUMBER_GENERATION_TYPE_LOCATION_WISE
+    ) {
       let storeDetail = await Location.findOne({
         where: { company_id: companyId, id: storeId },
       });
 
       let lastOrderNumber = storeDetail && storeDetail.get("last_order_number");
 
-      nextLocationOrderNumber = (lastOrderNumber && lastOrderNumber !== "") ? parseInt(lastOrderNumber) : 0;
+      nextLocationOrderNumber =
+        lastOrderNumber && lastOrderNumber !== ""
+          ? parseInt(lastOrderNumber)
+          : 0;
 
       nextLocationOrderNumber += 1;
 
@@ -1841,19 +2004,18 @@ const getOrderGenerationNumber = async (storeId, companyId) => {
       } else {
         formatedNextOrderNumber = `${nextLocationOrderNumber}`;
       }
-
     } else {
       let lastOrderNumber = await getValueByObject(
         Setting.SETTING_LAST_ORDER_NUMBER,
         settingList
       );
 
-      let orderCode = await getValueByObject(
-        Setting.ORDER_CODE,
-        settingList
-      );
+      let orderCode = await getValueByObject(Setting.ORDER_CODE, settingList);
 
-      nextCompanyOrderNumber = (lastOrderNumber && lastOrderNumber !== "") ? parseInt(lastOrderNumber) : 0;
+      nextCompanyOrderNumber =
+        lastOrderNumber && lastOrderNumber !== ""
+          ? parseInt(lastOrderNumber)
+          : 0;
 
       nextCompanyOrderNumber += 1;
       if (orderCode != "") {
@@ -1867,7 +2029,7 @@ const getOrderGenerationNumber = async (storeId, companyId) => {
   } catch (err) {
     console.log(err);
   }
-}
+};
 
 const calculateProfitAmount = (costPrice, salePrice, quantity) => {
   try {
@@ -1877,7 +2039,9 @@ const calculateProfitAmount = (costPrice, salePrice, quantity) => {
       let profitAmount = Number.Subtraction(salePrice, costPrice);
 
       if (profitAmount) {
-        netProfitAmont = quantity ? Number.Multiply(profitAmount, quantity) : profitAmount;
+        netProfitAmont = quantity
+          ? Number.Multiply(profitAmount, quantity)
+          : profitAmount;
       }
 
       return netProfitAmont;
@@ -1890,7 +2054,6 @@ const calculateProfitAmount = (costPrice, salePrice, quantity) => {
 
 const bulkOrder = async (orderObject, orderProductList, userId, companyId) => {
   try {
-
     if (!orderObject) {
       throw { message: "Order Is Required" };
     }
@@ -1899,18 +2062,35 @@ const bulkOrder = async (orderObject, orderProductList, userId, companyId) => {
       throw { message: "Order Products Is Required" };
     }
 
-    const shift = await AttendanceService.GetShift(userId, new Date(), companyId);
+    const shift = await AttendanceService.GetShift(
+      userId,
+      new Date(),
+      companyId
+    );
 
-    let formatedNextOrderNumber = await getOrderGenerationNumber(orderObject.storeId, companyId);
+    let formatedNextOrderNumber = await getOrderGenerationNumber(
+      orderObject.storeId,
+      companyId
+    );
 
-    let OrderTypeId = await OrderTypeService.getOrderTypeId(companyId, (orderObject?.type == Order.TYPE_DELIVERY ? Order.TYPE_DELIVERY : Order.TYPE_STORE))
+    let OrderTypeId = await OrderTypeService.getOrderTypeId(
+      companyId,
+      orderObject?.type == Order.TYPE_DELIVERY
+        ? Order.TYPE_DELIVERY
+        : Order.TYPE_STORE
+    );
 
     const orderData = {
       store_id: Number.Get(orderObject.storeId),
       date: new Date(),
       order_number: formatedNextOrderNumber,
       company_id: companyId,
-      status: await statusService.getFirstStatus(ObjectName.ORDER_TYPE, companyId, null, OrderTypeId),
+      status: await statusService.getFirstStatus(
+        ObjectName.ORDER_TYPE,
+        companyId,
+        null,
+        OrderTypeId
+      ),
       shift: Number.Get(shift),
       createdBy: Number.Get(userId),
       type: OrderTypeId && OrderTypeId[0],
@@ -1922,9 +2102,7 @@ const bulkOrder = async (orderObject, orderProductList, userId, companyId) => {
     let orderDetail = await orderModel.create(orderData);
 
     if (orderDetail) {
-
       for (let i = 0; i < orderProductList.length; i++) {
-
         const createData = {
           product_id: orderProductList[i].productId,
           store_id: Number.Get(orderDetail.storeId),
@@ -1932,22 +2110,33 @@ const bulkOrder = async (orderObject, orderProductList, userId, companyId) => {
           quantity: orderProductList[i].quantity,
           unit_price: Number.GetFloat(orderProductList[i].sale_price),
           order_date: orderDetail?.date,
-          price: orderProductList[i].quantity ? Number.Multiply(orderProductList[i].sale_price, orderProductList[i].quantity) : orderProductList[i].sale_price,
+          price: orderProductList[i].quantity
+            ? Number.Multiply(
+                orderProductList[i].sale_price,
+                orderProductList[i].quantity
+              )
+            : orderProductList[i].sale_price,
           company_id: companyId,
-          status: await statusService.getFirstStatus(ObjectName.ORDER_PRODUCT, companyId),
+          status: await statusService.getFirstStatus(
+            ObjectName.ORDER_PRODUCT,
+            companyId
+          ),
           cost_price: Number.GetFloat(orderProductList[i].cost),
-          profit_amount: calculateProfitAmount(orderProductList[i].cost, orderProductList[i].sale_price, orderProductList[i].quantity),
+          profit_amount: calculateProfitAmount(
+            orderProductList[i].cost,
+            orderProductList[i].sale_price,
+            orderProductList[i].quantity
+          ),
           mrp: Number.GetFloat(orderProductList[i].mrp),
           order_number: orderDetail.order_number,
         };
         await orderProduct.create(createData);
       }
     }
-
   } catch (err) {
     console.log(err);
   }
-}
+};
 
 const sendOrderSlackNotification = async (orderDetail, status) => {
   try {
@@ -1983,32 +2172,52 @@ const sendOrderSlackNotification = async (orderDetail, status) => {
           block_id: `block${i}`,
           text: {
             type: "mrkdwn",
-            text: `${i === 0 ? "*Product Details:*" : ""}\n${productIndex?.brand_name} - ${productIndex?.product_name} - Quantity: ${quantity}\n${Currency.GetFormattedCurrency(productIndex?.sale_price)}`,
+            text: `${i === 0 ? "*Product Details:*" : ""}\n${
+              productIndex?.brand_name
+            } - ${
+              productIndex?.product_name
+            } - Quantity: ${quantity}\n${Currency.GetFormattedCurrency(
+              productIndex?.sale_price
+            )}`,
           },
           accessory: {
             type: "image",
-            image_url: `${productIndex?.featured_media_url ? productIndex?.featured_media_url : "noImage.jpg"}`,
+            image_url: `${
+              productIndex?.featured_media_url
+                ? productIndex?.featured_media_url
+                : "noImage.jpg"
+            }`,
             alt_text: "Product Image",
           },
         });
-    
+
         // Add a divider between product blocks
         if (i < Math.min(OrderProductList.length, 48) - 1) {
           blocks.push({ type: "divider" });
         }
       }
-    }    
+    }
 
     let customerDetail = null;
     if (addressDetail) {
-      customerDetail = `*Customer Details:*\n${addressDetail?.name ? addressDetail?.name : ""
-        }${addressDetail?.name && addressDetail?.phone_number ? "," : ""}${addressDetail?.phone_number ? "\n" + addressDetail?.phone_number : ""
-        }${(addressDetail?.name || addressDetail?.phone_number) && addressDetail?.address1 ? "," : ""}${addressDetail?.address1 ? "\n" + addressDetail?.address1 : ""
-        }${addressDetail?.address1 && addressDetail?.address2 ? "," : ""}${addressDetail?.address2 ? "\n" + addressDetail?.address2 : ""
-        }`;
+      customerDetail = `*Customer Details:*\n${
+        addressDetail?.name ? addressDetail?.name : ""
+      }${addressDetail?.name && addressDetail?.phone_number ? "," : ""}${
+        addressDetail?.phone_number ? "\n" + addressDetail?.phone_number : ""
+      }${
+        (addressDetail?.name || addressDetail?.phone_number) &&
+        addressDetail?.address1
+          ? ","
+          : ""
+      }${addressDetail?.address1 ? "\n" + addressDetail?.address1 : ""}${
+        addressDetail?.address1 && addressDetail?.address2 ? "," : ""
+      }${addressDetail?.address2 ? "\n" + addressDetail?.address2 : ""}`;
     }
 
-    const getSlackId = await UserService.getSlack(orderDetail?.owner, orderDetail?.company_id);
+    const getSlackId = await UserService.getSlack(
+      orderDetail?.owner,
+      orderDetail?.company_id
+    );
 
     const orderDetailRedirectingUrl = `${config.defaultPortalUrl}/order/${orderDetail?.id}`;
 
@@ -2017,8 +2226,18 @@ const sendOrderSlackNotification = async (orderDetail, status) => {
       slackUserId: getSlackId?.slack_id,
       latitude: addressDetail?.latitude,
       longitude: addressDetail?.longitude,
-      headerText: orderDetail?.type === Order.TYPE_DELIVERY ? "Delivery Order" : "Store Order",
-      orderDetail: `*Order Number:* <${orderDetailRedirectingUrl}|*${orderDetail?.order_number}*> , ${DateTime.getDateTimeByUserProfileTimezone(orderDetail.date, orderDetail?.timeZone)}\n*Order Type:* ${orderDetail?.type === Order.TYPE_DELIVERY ? "Delivery" : "Store"}\n*Status:* ${status}`,
+      headerText:
+        orderDetail?.type === Order.TYPE_DELIVERY
+          ? "Delivery Order"
+          : "Store Order",
+      orderDetail: `*Order Number:* <${orderDetailRedirectingUrl}|*${
+        orderDetail?.order_number
+      }*> , ${DateTime.getDateTimeByUserProfileTimezone(
+        orderDetail.date,
+        orderDetail?.timeZone
+      )}\n*Order Type:* ${
+        orderDetail?.type === Order.TYPE_DELIVERY ? "Delivery" : "Store"
+      }\n*Status:* ${status}`,
     };
 
     // Send the order message to Slack
@@ -2030,7 +2249,7 @@ const sendOrderSlackNotification = async (orderDetail, status) => {
 
 const getCashAndUpiTotalAmount = async (params) => {
   try {
-    let whereClause = '';
+    let whereClause = "";
 
     if (params?.startDate) {
       whereClause += ` AND "order"."date" >= '${params?.startDate}'`;
@@ -2044,8 +2263,11 @@ const getCashAndUpiTotalAmount = async (params) => {
       whereClause += ` AND "order"."store_id" = ${params?.location}`;
     }
 
-    if (Number.isNotNull(params?.status)) {
-
+    if (params?.status && Array.isArray(params.status)) {
+      // If status is an array, use the IN clause
+      whereClause += ` AND "order"."status" IN (${params.status.join(", ")})`;
+    } else if (Number.isNotNull(params?.status)) {
+      // If it's a single status, use the equal sign
       whereClause += ` AND "order"."status" = ${params?.status}`;
     }
 
@@ -2060,8 +2282,11 @@ const getCashAndUpiTotalAmount = async (params) => {
     if (params?.type) {
       if (Array.isArray(params.type) && params.type.length > 0) {
         // If it's a non-empty array, use the IN clause
-        whereClause += ` AND "order"."type" IN (${params.type.join(',')})`;
-      } else if (typeof params.type === 'number' || typeof params.type === 'string') {
+        whereClause += ` AND "order"."type" IN (${params.type.join(",")})`;
+      } else if (
+        typeof params.type === "number" ||
+        typeof params.type === "string"
+      ) {
         // If it's a single value (number or string), treat it as a single item
         whereClause += ` AND "order"."type" = ${params.type}`;
       }
@@ -2076,12 +2301,18 @@ const getCashAndUpiTotalAmount = async (params) => {
       whereClause += ` AND "order"."order_number" = '${params?.searchTerm}'`;
     }
 
+    let draftOrderStatus = await statusService.getAllStatusByGroupId(
+      ObjectName.ORDER_TYPE,
+      Status.GROUP_DRAFT,
+      params?.companyId,
+      null,
+      { object_id: params && params?.type ? params?.type : null }
+    );
 
-    let draftOrderStatus = await statusService.getAllStatusByGroupId(ObjectName.ORDER_TYPE, Status.GROUP_DRAFT, params?.companyId, null, { object_id: params && params?.type ? params?.type : null })
-
-    let draftOrderStatusIds = Array.isArray(draftOrderStatus) && draftOrderStatus.length > 0
-      ? draftOrderStatus.map((data) => data?.id)
-      : [];
+    let draftOrderStatusIds =
+      Array.isArray(draftOrderStatus) && draftOrderStatus.length > 0
+        ? draftOrderStatus.map((data) => data?.id)
+        : [];
 
     const rawQuery = `
       SELECT COALESCE(SUM("order"."total_amount"), 0) AS "totalAmount",
@@ -2089,7 +2320,11 @@ const getCashAndUpiTotalAmount = async (params) => {
              COALESCE(SUM("order"."upi_amount"), 0) AS "totalUpiAmount",
              COALESCE(SUM(CASE
                WHEN ("order"."cash_amount" IS NULL OR "order"."cash_amount" = 0) 
-                          AND ("order"."upi_amount" IS NULL OR "order"."upi_amount" = 0)  AND ("order"."status" IN (${draftOrderStatusIds.length ? draftOrderStatusIds.join(',') : 'NULL'})) 
+                          AND ("order"."upi_amount" IS NULL OR "order"."upi_amount" = 0)  AND ("order"."status" IN (${
+                            draftOrderStatusIds.length
+                              ? draftOrderStatusIds.join(",")
+                              : "NULL"
+                          })) 
                THEN "order"."total_amount"
                ELSE 0
            END), 0) AS "totalDraftAmount"
@@ -2107,9 +2342,11 @@ const getCashAndUpiTotalAmount = async (params) => {
 
     return {
       totalAmount: totalAmountResult && totalAmountResult[0]?.totalAmount,
-      totalCashAmount: totalAmountResult && totalAmountResult[0]?.totalCashAmount,
+      totalCashAmount:
+        totalAmountResult && totalAmountResult[0]?.totalCashAmount,
       totalUpiAmount: totalAmountResult && totalAmountResult[0]?.totalUpiAmount,
-      totalDraftAmount: totalAmountResult && totalAmountResult[0]?.totalDraftAmount,
+      totalDraftAmount:
+        totalAmountResult && totalAmountResult[0]?.totalDraftAmount,
     };
   } catch (err) {
     console.log(err);
@@ -2117,40 +2354,51 @@ const getCashAndUpiTotalAmount = async (params) => {
 };
 
 const cancel = async (req, res, next) => {
-
   let orderId = req && req.params && req.params.id;
 
-  let reason = req.body.notes
+  let reason = req.body.notes;
 
   if (!orderId) {
-    return res.json(Response.BAD_REQUEST, { message: "Order Id Required" })
+    return res.json(Response.BAD_REQUEST, { message: "Order Id Required" });
   }
 
   let companyId = Request.GetCompanyId(req);
 
   if (!companyId) {
-    return res.json(Response.BAD_REQUEST, { message: "company Id Required" })
+    return res.json(Response.BAD_REQUEST, { message: "company Id Required" });
   }
 
-  let reasonDetails = await orderModel.findOne({where : {id:orderId , company_id: companyId, reason: { [Op.eq]: null }}})
+  let reasonDetails = await orderModel.findOne({
+    where: { id: orderId, company_id: companyId, reason: { [Op.eq]: null } },
+  });
 
   if (!reason && reasonDetails) {
     return res.json(Response.BAD_REQUEST, { message: "Enter The Reason" });
   }
 
-  const cancelledOrderStatusId = await statusService.Get(ObjectName.ORDER_TYPE, Status.GROUP_CANCELLED, companyId);
+  const cancelledOrderStatusId = await statusService.Get(
+    ObjectName.ORDER_TYPE,
+    Status.GROUP_CANCELLED,
+    companyId
+  );
 
   if (!cancelledOrderStatusId) {
-    return res.json(Response.BAD_REQUEST, { message: "Cancel Status Required" })
+    return res.json(Response.BAD_REQUEST, {
+      message: "Cancel Status Required",
+    });
   }
 
-  const cancelledOrderProductStatusId = await statusService.Get(ObjectName.ORDER_PRODUCT, Status.GROUP_CANCELLED, companyId);
+  const cancelledOrderProductStatusId = await statusService.Get(
+    ObjectName.ORDER_PRODUCT,
+    Status.GROUP_CANCELLED,
+    companyId
+  );
 
   let updateData = {
     cancelled_at: new Date(),
     status: cancelledOrderStatusId?.id,
-    reason:req?.body?.notes
-  }
+    reason: req?.body?.notes,
+  };
 
   let orderResponse = await orderService.update(updateData, {
     where: {
@@ -2160,19 +2408,53 @@ const cancel = async (req, res, next) => {
   });
 
   if (orderResponse) {
-    await orderProductModelService.update({ status: cancelledOrderProductStatusId && cancelledOrderProductStatusId?.id }, { where: { order_id: orderId, company_id: companyId } })
+    await orderProductModelService.update(
+      {
+        status:
+          cancelledOrderProductStatusId && cancelledOrderProductStatusId?.id,
+      },
+      { where: { order_id: orderId, company_id: companyId } }
+    );
   }
   res.json(Response.OK, { message: "Order Cancelled" });
   res.on("finish", async () => {
     History.create("Order Cancelled", req, ObjectName.ORDER, orderId);
-  })
+  });
+};
 
+const sendNotification = async (req, res) => {
+  const { orderId } = req && req.body;
 
-}
+  const companyId = Request.GetCompanyId(req);
+
+  let getOrderDetail = await getOrdersById(orderId, companyId);
+
+  const status = getOrderDetail && getOrderDetail?.statusDetail;
+
+  if (Number.isNotNull(status)) {
+    const statusDetail = await statusService.getData(status?.id, companyId);
+
+    if (
+      statusDetail &&
+      statusDetail?.notify_to_owner == Status.NOTIFY_TO_OWNER_ENABLED
+    ) {
+      const timeZone = Request.getTimeZone(req);
+      await sendOrderSlackNotification(getOrderDetail, status?.name);
+
+      return res.json(Response.OK, {
+        message: "Slack Notification sent successfully",
+      });
+    }
+  }
+
+  return res.json(Response.OK, {
+    message: "No notification sent as the status does not require it.",
+  });
+};
 
 const verifyUpiPaymentScreenshot = async (params) => {
   let { startDate, endDate, companyId } = params;
-  let where = {}
+  let where = {};
   if (startDate && endDate) {
     where.date = {
       [Op.and]: {
@@ -2186,39 +2468,45 @@ const verifyUpiPaymentScreenshot = async (params) => {
     where: {
       company_id: companyId,
       upi_amount: {
-        [Op.gt]: 0
+        [Op.gt]: 0,
       },
       upi_payment_verified: null,
-      ...where
+      ...where,
     },
-    attributes: ['id']
-  }
-
+    attributes: ["id"],
+  };
 
   let orderList = await orderService.find(query);
   if (ArrayList.isArray(orderList)) {
-
     const mediaDetails = await Media.findAll({
       where: {
         object_name: ObjectName.ORDER,
-        object_id: { [Op.in]: orderList.map(order => order?.id) },
+        object_id: { [Op.in]: orderList.map((order) => order?.id) },
       },
       attributes: ["id", "file_name", "object_name", "object_id", "visibility"],
     });
 
-    const mediaGroupedByOrder = ArrayList.isArray(mediaDetails) && mediaDetails.reduce((acc, media) => {
-      if (!acc[media.object_id]) {
-        acc[media.object_id] = [];
-      }
-      const media_url = MediaServices.getMediaUrlsByMediaId(media.id, media.file_name, media.visibility);
-      acc[media.object_id].push(media_url);
-      return acc;
-    }, {}) || [];
+    const mediaGroupedByOrder =
+      (ArrayList.isArray(mediaDetails) &&
+        mediaDetails.reduce((acc, media) => {
+          if (!acc[media.object_id]) {
+            acc[media.object_id] = [];
+          }
+          const media_url = MediaServices.getMediaUrlsByMediaId(
+            media.id,
+            media.file_name,
+            media.visibility
+          );
+          acc[media.object_id].push(media_url);
+          return acc;
+        }, {})) ||
+      [];
 
     for (let i = 0; i < orderList.length; i++) {
       const { id } = orderList[i];
 
-      let mediaUrl = Number.isNotNull(mediaGroupedByOrder[id]) && mediaGroupedByOrder[id][0];
+      let mediaUrl =
+        Number.isNotNull(mediaGroupedByOrder[id]) && mediaGroupedByOrder[id][0];
       if (mediaUrl) {
         let convertedText = await MediaServices.extractTextFromImage(mediaUrl);
         const result = String.checkForNameInText(
@@ -2259,10 +2547,7 @@ const verifyUpiPaymentScreenshot = async (params) => {
       }
     }
   }
-
-}
-
-
+};
 
 module.exports = {
   isExistById,
@@ -2290,4 +2575,5 @@ module.exports = {
   getOrderAmountByShift,
   cancel,
   verifyUpiPaymentScreenshot,
+  sendNotification,
 };

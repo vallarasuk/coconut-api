@@ -11,6 +11,8 @@ const History = require("../../services/HistoryService");
  */
 async function update(req, res, next) {
     try {
+        const hasPermission = await Permission.Has(Permission.PRODUCT_EDIT, req);
+
 
         let response = await ProductPriceService.update(req, res, next)
         if (response && response.statusCode == Response.OK) {

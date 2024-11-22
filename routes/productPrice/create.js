@@ -10,7 +10,11 @@ const History = require("../../services/HistoryService");
  */
 async function create(req, res, next) {
   try {
-   
+    const hasPermission = await Permission.Has(
+      Permission.PRODUCT_PRICE_ADD,
+      req
+    );
+
 
     const companyId = req.user && req.user.company_id;
 

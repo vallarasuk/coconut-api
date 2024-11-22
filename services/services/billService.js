@@ -57,6 +57,7 @@ class BillService {
     const company_id = Request.GetCompanyId(req);
 
     try {
+      const hasPermission = await Permission.Has(Permission.BILL_ADD, req);
      
       let data = req.body;
       let query = {
@@ -684,6 +685,7 @@ class BillService {
   static async update(req, res, next) {
     try {
       const hasPermission = await Permission.Has(Permission.BILL_EDIT, req);
+    
       const id = req.params.id;
     let roleId = Request.getUserRole(req);
 
@@ -920,7 +922,8 @@ class BillService {
   // delete
   static async del(req, res) {
     try {
-      
+      const hasPermission = await Permission.Has(Permission.BILL_DELETE, req);
+    
       const id = req.params.id;
       const company_id = Request.GetCompanyId(req);
 

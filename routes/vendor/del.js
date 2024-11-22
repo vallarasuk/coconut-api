@@ -8,7 +8,6 @@ function del(req, res, next) {
   const vendorId = req.params.id;
 
 
-
   AccountVendor.findOne({
     attributes: ["id"],
     where: { id: vendorId },

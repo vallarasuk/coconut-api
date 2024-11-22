@@ -6,7 +6,6 @@ const projectService = require("../../services/project");
 
 function create(req, res, next) {
 
-
   const data = req.body;
 
   const validations = [

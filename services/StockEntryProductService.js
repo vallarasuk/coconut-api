@@ -31,6 +31,7 @@ const StatusService = require("./StatusService");
 const Permission = require("../helpers/Permission");
 const { getSettingValue } = require("./SettingService");
 const Setting = require("../helpers/Setting");
+const { TODAY_VALUE } = require("../helpers/Date");
 const dateTime = new DateTime();
 
 const getQuantity = (data,  productId,storeId) => {
@@ -524,8 +525,9 @@ const getCount = async (params)=>{
     manageOthers
   } = params;
 
-  let start_date = DateTime.toGetISOStringWithDayStartTime(new Date(date));
-  let end_date = DateTime.toGetISOStringWithDayEndTime(new Date(date));
+  let customDate = DateTime.getCustomDateTime(TODAY_VALUE, timeZone)
+  let start_date = date ? DateTime.toGetISOStringWithDayStartTime(new Date(date)):null;
+  let end_date = date ? DateTime.toGetISOStringWithDayEndTime(new Date(date)):null;
   try{
 
     let where={};
@@ -551,8 +553,8 @@ const getCount = async (params)=>{
           ...where,
           createdAt: {
             [Op.and]: {
-              [Op.gte]: DateTime.toGMT(start_date, timeZone),
-              [Op.lte]: DateTime.toGMT(end_date, timeZone),
+              [Op.gte]: date ? DateTime.toGMT(start_date, timeZone): customDate.startDate,
+              [Op.lte]: date ? DateTime.toGMT(end_date, timeZone): customDate.endDate,
             },
           },
       }

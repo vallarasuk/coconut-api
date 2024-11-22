@@ -19,8 +19,9 @@ const Boolean = require("../../lib/Boolean");
 
 async function search(req, res, next) {
   try {
+    const hasPermission = await Permission.Has(Permission.SUPPLIER_PRODUCT_VIEW, req);
 
-  
+ 
 
     let { page, pageSize, search, sort, sortDir, pagination, vendor_id, product_id, brand, category } = req.query;
     // Validate if page is not a number

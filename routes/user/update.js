@@ -10,7 +10,7 @@ const { User } = require("../../db").models;
 function update(req, res, next) {
 	const data = req.body;
    let companyId = Request.GetCompanyId(req)
-	const userId = req.user.id;
+	const userId = req.isAdmin ? data.id || req.user.id : req.user.id;
 
 	const validations = [
 		{ value: userId, label: "user id", type: "integer" },

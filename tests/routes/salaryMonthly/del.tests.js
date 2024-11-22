@@ -16,6 +16,7 @@ describe("SalaryMonthly - Delete", () => {
 		}
 	});
 
+	req.isAdmin = true;
 	req.params.salaryId = 1;
 
 	it("should delete a attendance", (done) => {
@@ -54,6 +55,7 @@ describe("SalaryMonthly - Delete", () => {
 	});
 
 	it("should return permission issue if its not admin", (done) => {
+		req.isAdmin = req.isManager = false;
 
 		next = (err) => {
 			expect(err.statusCode).to.be.equal(401);

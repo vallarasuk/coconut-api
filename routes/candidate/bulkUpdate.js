@@ -25,7 +25,7 @@ function bulkUpdate(req, res, next) {
     );
   }
 
-
+ 
 
   if (!candidateId) {
     return next(new errors.BadRequestError("Candidate id is required"));

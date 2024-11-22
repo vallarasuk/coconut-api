@@ -146,11 +146,12 @@ async function mobileLogin(req, res, next) {
             user.accountId = accountId;
             user.app_id = body.app_id
             user.featureList = featureList;
+            user.userId = user && user?.id;
         }
 
         res.send({
             message: "User LoggedIn",
-            user: user
+            user
         });
 
         res.on("finish", async () => {

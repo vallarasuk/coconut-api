@@ -30,9 +30,11 @@ const Number = require("../../lib/Number");
  */
 async function bulkUpdate(req, res, next) {
 
+    const hasPermission = await Permission.Has(Permission.PRODUCT_BULK_UPDATE, req);
+
     const companyId = Request.GetCompanyId(req);
 
-    
+
     try {
         const data = req.body;
         const productIds = data.ids;

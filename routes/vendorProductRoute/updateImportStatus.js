@@ -14,7 +14,10 @@ const { vendor_product } = require("../../db").models;
  * Update vendor products import status
  */
 async function updateImportStatus(req, res, next) {
-
+  const hasPermission = await Permission.Has(
+    Permission.SUPPLIER_PRODUCT_UPDATE_IMPORT_STATUS,
+    req
+  );
 
 
   const { importStatus } = req.params;

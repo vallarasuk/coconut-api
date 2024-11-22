@@ -33,6 +33,7 @@ const Permission = require("../../helpers/Permission");
 const Response = require("../../helpers/Response");
 
 async function productFilterList(req, res, next) {
+  const hasPermission = await Permission.Has(Permission.PRODUCT_VIEW, req);
 
 
   try {

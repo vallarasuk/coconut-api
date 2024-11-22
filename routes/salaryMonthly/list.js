@@ -21,10 +21,14 @@ function list(req, res, next) {
     return next(new errors.BadRequestError("Invalid page size"));
   }
 
+  const userId = req.params.userId;
 
   const where = {};
 
- if (query.userId) {
+  if (!req.isAdmin && !req.isManager) {
+    where.user_id = userId;
+    where.status = "Published";
+  } else if (query.userId) {
     where.user_id = query.userId;
   }
 

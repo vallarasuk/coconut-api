@@ -7,6 +7,8 @@ async function search(req, res, next) {
 
     let companyId = req.user && req.user.company_id;
 
+    const hasPermission = await Permission.Has(Permission.PURCHASE_RECOMMENDATION_REPORT_VIEW, req);
+
 
     let response = await PurchaseRecommededProductService.search(params, companyId,req);
 
